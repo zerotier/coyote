@@ -25,7 +25,6 @@ http = "^0.2"
 url = { version = "^2.2", features = [ "serde" ] }
 deadpool-postgres = { version = "^0.10", features = ["serde"] }
 log = "^0.4"
-env_logger = "^0.9"
 trust-dns-client = "^0.20"
 openssl = "^0.10"
 lazy_static = "^1.4"
@@ -44,6 +43,7 @@ name = "acmed"
 path = "examples/acmed.rs"
 
 [dev-dependencies]
+env_logger = "^0.9"
 rustls = "^0.20"
 rustls-pemfile = "^0.3"
 webpki-roots = "^0.22"
