@@ -5,9 +5,12 @@ use thiserror::Error;
 
 use self::db::LoadError;
 
+/// Mostly JWS-related errors
 pub mod acme;
+/// DB/model-related errors
 pub mod db;
 
+/// HandlerError is for encapsulating errors in HTTP handlers.
 #[derive(Clone, Debug, Error)]
 pub enum HandlerError {
     #[error("generic handler error: {0}")]
@@ -37,6 +40,8 @@ impl From<HandlerError> for Error {
     }
 }
 
+/// ACMEValidationError is a series of semi-internal errors used to describe problems with
+/// validating the ACME exchange
 #[derive(Error, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ACMEValidationError {
     #[error("No key provided")]
@@ -162,7 +167,8 @@ impl From<acme::JWSValidationError> for Error {
 /// All error return values inherit from the URN below.
 const ACME_URN_NAMESPACE: &str = "urn:ietf:params:acme:error:";
 
-/// RFCError is for reporting errors conformant to the ACME RFC.
+/// RFCError is for reporting errors conformant to the ACME RFC. These are used in the `type` field
+/// of the "problem details" document returned to ACME clients.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum RFCError {
     AccountDoesNotExist,
@@ -236,25 +242,33 @@ pub enum ValidationError {
     InvalidIdentifier,
 }
 
-/// Error is the error returned to the client.
+/// Error is the error returned to the client. This encapsulates the RFC7807 "problem details"
+/// specification.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Error {
+    /// the type of error we have experienced.
     #[serde(rename = "type")]
     error_type: RFCError,
+    /// subproblems, if any, will be here.
     #[serde(skip_serializing_if = "Option::is_none")]
     subproblems: Option<Vec<Error>>,
+    /// ACMEIdentifier is the subject of the problem.
     #[serde(skip_serializing_if = "Option::is_none")]
     identifier: Option<ACMEIdentifier>,
+    /// detail must be supplied; it is the overarching detail of the problem, or the "error
+    /// message".
     detail: String,
+    /// external_account_binding is unused in our implementation as of yet.
     #[serde(skip_serializing_if = "Option::is_none")]
     external_account_binding: Option<String>,
+    /// user_action_instance is unused in our implementation as of yet.
     #[serde(skip_serializing_if = "Option::is_none")]
     user_action_instance: Option<String>,
 }
 
 impl Error {
-    /// new constructs a new error struct. Use methods like subproblems() and identifier() to build
-    /// a fully validate()able struct from parts.
+    /// new constructs a new error struct with a "builder pattern". Use methods like subproblems()
+    /// and identifier() to build a fully [Error::validate]able struct from parts.
     pub fn new(error_type: RFCError, detail: &str) -> Self {
         Self {
             error_type,

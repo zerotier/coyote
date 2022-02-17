@@ -3,6 +3,8 @@ use openssl::error::ErrorStack;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// JWSValidationError is a mostly-internal encapsulation of JWS errors encountered while
+/// validating the signature.
 #[derive(Clone, Error, Debug, PartialEq, Serialize, Deserialize)]
 pub enum JWSValidationError {
     #[error("general JWS handshake error: {0:?}")]
@@ -38,6 +40,7 @@ impl From<ErrorStack> for JWSValidationError {
     }
 }
 
+/// JWSError is like [JWSValidationError] but for more general situations surrounding JWS usage.
 #[derive(Clone, Error, Debug, PartialEq, Serialize, Deserialize)]
 pub enum JWSError {
     #[error("openssl error: {0}")]

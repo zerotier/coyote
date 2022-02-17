@@ -1,6 +1,7 @@
 use deadpool_postgres::PoolError;
 use thiserror::Error;
 
+/// ConnectionError is for database connection issues
 #[derive(Debug, Error)]
 pub enum ConnectionError {
     #[error("Unspecified connection error: {0}")]
@@ -31,6 +32,7 @@ impl From<PoolError> for ConnectionError {
     }
 }
 
+/// SaveError is for any error involving a persistence operation.
 #[derive(Debug, Error)]
 pub enum SaveError {
     #[error("error while saving: {0}")]
@@ -69,6 +71,7 @@ impl From<tokio_postgres::Error> for SaveError {
     }
 }
 
+/// LoadError is for any error involving a fetch operation.
 #[derive(Debug, Error)]
 pub enum LoadError {
     #[error("error while loading: {0}")]
@@ -103,6 +106,7 @@ impl From<tokio_postgres::Error> for LoadError {
     }
 }
 
+/// MigrationError is for errors involving updating the database schema.
 #[derive(Debug, Error)]
 pub enum MigrationError {
     #[error("Unspecified migration error: {0}")]
