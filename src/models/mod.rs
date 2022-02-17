@@ -6,17 +6,23 @@ use deadpool_postgres::{Manager, ManagerConfig, Object, Pool};
 use refinery::Report;
 use tokio_postgres::{Config, NoTls, Row, Transaction};
 
+/// these are the actual migrations that will be executed. this module is automatically generated.
 pub mod migrations {
     use refinery::embed_migrations;
     embed_migrations!("migrations");
 }
 
+/// account operations
 pub mod account;
+/// operations related to nonce management
 pub mod nonce;
+/// order operations
 pub mod order;
 
 pub(crate) const NONCE_KEY_SIZE: Option<usize> = Some(32);
 
+/// Postgres is our (currently only) implementation of backing storage. It uses a
+/// [deadpool_postgres] Pool and migrates automatically with [refinery].
 #[derive(Clone)]
 pub struct Postgres {
     pool: Pool,
@@ -24,6 +30,8 @@ pub struct Postgres {
 }
 
 impl Postgres {
+    /// This function only makes one connection with [tokio_postgres] and just returns that client. It does not use a pool.
+    /// This makes some situations easier, notably migrations.
     pub async fn connect_one(config: &str) -> Result<tokio_postgres::Client, ConnectionError> {
         let (client, conn) = tokio_postgres::connect(config, NoTls).await?;
 
@@ -36,6 +44,11 @@ impl Postgres {
         Ok(client)
     }
 
+    /// This function initializes Postgres with a pool size of `pool_size` and connection
+    /// configuration `config`. The `config` string is a standard PostgreSQL DSN, e.g.:
+    ///
+    ///
+    /// `user=foo hostname=localhost password=quux`
     pub async fn new(config: &str, pool_size: usize) -> Result<Self, ConnectionError> {
         let pg_config = Config::from_str(config)?;
         let mgr_config = ManagerConfig::default();
@@ -50,6 +63,7 @@ impl Postgres {
         })
     }
 
+    /// client returns the db client.
     pub async fn client(self) -> Result<Object, ConnectionError> {
         Ok(self.pool.get().await?)
     }
