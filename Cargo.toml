@@ -1,0 +1,51 @@
+[package]
+name = "coyote"
+version = "0.1.0"
+authors = ["Erik Hollensbe <git@hollensbe.org>", "Adam Ierymenko <adam.ierymenko@zerotier.com>"]
+edition = "2021"
+license = "BSD-3-Clause"
+readme = "README.md"
+description = "Embeddable ACME server with programmable challenges and storage"
+repository = "https://github.com/zerotier/coyote"
+homepage = "https://github.com/zerotier/coyote"
+keywords = ["ACME", "letsencrypt", "zerotier"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thiserror = "^1.0"
+rand = "^0.8"
+base64 = "^0.13"
+spectral = "^0.6"
+serde_json = "^1.0"
+serde = "^1.0"
+tokio = { version = "^1.16", features = ["full"] }
+ratpack = "^0.1" # { git = "https://github.com/zerotier/ratpack", branch = "main" }
+hyper = "^0.14"
+http = "^0.2"
+url = { version = "^2.2", features = [ "serde" ] }
+deadpool-postgres = { version = "^0.10", features = ["serde"] }
+log = "^0.4"
+env_logger = "^0.9"
+trust-dns-client = "^0.20"
+tempfile = "^3.3"
+openssl = "^0.10"
+lazy_static = "^1.4"
+refinery = { version = "^0.8", features = ["tokio-postgres"] }
+tokio-postgres = { version = "^0.7", features = ["with-serde_json-1", "with-chrono-0_4"] }
+async-trait = "^0.1"
+eggshell = "^0.1" # { path = "../eggshell" }
+bollard = "^0.11"
+futures = "^0.3"
+futures-core = "^0.3"
+chrono = { version = "^0.4", features = [ "serde" ] }
+x509-parser = { version = "^0.12", features = [ "ring", "verify", "validate" ] }
+rustls = "^0.20"
+rustls-pemfile = "^0.3"
+webpki-roots = "^0.22"
+
+[lib]
+
+[[bin]]
+name = "acmed"
+path = "src/acmed.rs"

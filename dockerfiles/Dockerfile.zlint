@@ -1,0 +1,12 @@
+# vim: ft=dockerfile
+
+FROM alpine:latest as builder
+
+ARG ZLINT
+
+RUN apk add curl
+RUN curl -sSL "https://github.com/zmap/zlint/releases/download/v${ZLINT}/zlint_${ZLINT}_Linux_x86_64.tar.gz" | tar -vxz -C /tmp
+
+FROM alpine:latest
+
+COPY --from=builder /tmp/zlint*/zlint /usr/bin
