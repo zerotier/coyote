@@ -149,6 +149,8 @@ impl Order {
         Ok(o)
     }
 
+    // FIXME this is only used in tests rn
+    #[cfg(test)]
     pub(crate) async fn challenges(
         &self,
         tx: &Transaction<'_>,

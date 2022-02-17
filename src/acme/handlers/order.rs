@@ -18,10 +18,6 @@ use crate::{
 
 use super::{uri_to_url, HandlerState, ServiceState};
 
-pub struct OrdersList {
-    orders: Vec<Url>,
-}
-
 /// RFC8555 7.1.3. Detailed read.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

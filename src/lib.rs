@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 //! Coyote lets you make ACME servers, which are not guaranteed to not explode in
 //! your face. You have to code that out yourself.
 //!

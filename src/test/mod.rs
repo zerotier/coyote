@@ -38,8 +38,6 @@ fn is_debug() -> bool {
     !std::env::var(DEBUG_VAR).unwrap_or_default().is_empty()
 }
 
-pub(crate) const DEFAULT_CONTACT: &str = "erik@hollensbe.org";
-
 impl From<MigrationError> for eggshell::Error {
     fn from(me: MigrationError) -> Self {
         Self::Generic(me.to_string())
@@ -53,7 +51,7 @@ pub struct PGTest {
     docker: Arc<Mutex<Docker>>,
     // NOTE: the only reason we keep this is to ensure it lives the same lifetime as the PGTest
     // struct; otherwise the temporary directory is removed prematurely.
-    temp: Arc<Mutex<TempDir>>,
+    _temp: Arc<Mutex<TempDir>>,
 }
 
 fn pull_images(images: Vec<&str>) -> () {
@@ -189,7 +187,7 @@ impl PGTest {
             docker,
             gs: Arc::new(Mutex::new(gs)),
             postgres,
-            temp: Arc::new(Mutex::new(temp)),
+            _temp: Arc::new(Mutex::new(temp)),
         })
     }
 
@@ -200,11 +198,8 @@ impl PGTest {
     pub fn eggshell(self) -> Arc<Mutex<EggShell>> {
         self.gs
     }
-
-    pub fn docker(&self) -> Arc<Mutex<Docker>> {
-        self.docker.clone()
-    }
 }
+
 #[derive(Debug, Clone, Error)]
 pub(crate) enum ContainerError {
     #[error("Unknown error encountered: {0}")]
@@ -228,7 +223,6 @@ fn short_hash(s: String) -> String {
 #[derive(Clone)]
 pub(crate) struct TestService {
     pub pg: Box<PGTest>,
-    pub nonce: PostgresNonceValidator,
     pub app: ratpack::app::TestApp<ServiceState, HandlerState>,
     pub url: String,
 }
@@ -279,7 +273,6 @@ impl TestService {
 
         Self {
             pg: Box::new(pg),
-            nonce: validator,
             app: TestApp::new(app),
             url,
         }

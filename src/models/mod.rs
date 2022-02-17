@@ -78,6 +78,7 @@ impl Postgres {
 
     /// resets the database, destroying all data in the public schema.
     /// useful for tests.
+    #[cfg(test)]
     pub(crate) async fn reset(&self) -> Result<(), SaveError> {
         let c = Self::connect_one(&self.config).await?;
         c.execute("drop schema public cascade", &[]).await?;

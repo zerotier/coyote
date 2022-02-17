@@ -258,6 +258,7 @@ impl CACollector {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use openssl::{error::ErrorStack, x509::X509Req};
 

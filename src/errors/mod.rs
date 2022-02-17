@@ -169,7 +169,7 @@ const ACME_URN_NAMESPACE: &str = "urn:ietf:params:acme:error:";
 
 /// RFCError is for reporting errors conformant to the ACME RFC. These are used in the `type` field
 /// of the "problem details" document returned to ACME clients.
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize)]
 pub enum RFCError {
     AccountDoesNotExist,
     AlreadyRevoked,
@@ -199,7 +199,16 @@ pub enum RFCError {
 
 impl RFCError {
     /// to_string converts an enum error into the string you should return to the client.
-    fn to_string(self) -> String {
+    fn serde_serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        s.serialize_str(&self.to_string())
+    }
+}
+
+impl ToString for RFCError {
+    fn to_string(&self) -> String {
         ACME_URN_NAMESPACE.to_string()
             + match self {
                 RFCError::AccountDoesNotExist => "accountDoesNotExist",
@@ -247,7 +256,7 @@ pub enum ValidationError {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Error {
     /// the type of error we have experienced.
-    #[serde(rename = "type")]
+    #[serde(rename = "type", serialize_with = "RFCError::serde_serialize")]
     error_type: RFCError,
     /// subproblems, if any, will be here.
     #[serde(skip_serializing_if = "Option::is_none")]

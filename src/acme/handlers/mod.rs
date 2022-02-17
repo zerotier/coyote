@@ -27,7 +27,8 @@ pub(crate) mod directory;
 pub(crate) mod nonce;
 pub(crate) mod order;
 
-pub(crate) const REPLAY_NONCE_HEADER: &str = "Replay-Nonce";
+const REPLAY_NONCE_HEADER: &str = "Replay-Nonce";
+const ACME_CONTENT_TYPE: &str = "application/jose+json";
 
 /// ServiceState is the carried state globally for the application. It contains many items the
 /// handlers need to function.
@@ -77,7 +78,7 @@ impl HandlerState {
         }
 
         Ok(builder
-            .header("content-type", "application/json")
+            .header("content-type", ACME_CONTENT_TYPE)
             .header(REPLAY_NONCE_HEADER, self.clone().nonce.unwrap())
             .header(
                 "Link",

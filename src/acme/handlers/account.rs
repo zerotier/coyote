@@ -103,10 +103,6 @@ impl NewAccount {
         self.contact.clone()
     }
 
-    pub fn is_deleted(&self) -> bool {
-        self.contact.is_none() || self.contact.as_ref().unwrap().is_empty()
-    }
-
     pub fn to_account(&self) -> Account {
         Account {
             status: AccountStatus::Valid,

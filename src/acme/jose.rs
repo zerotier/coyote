@@ -290,6 +290,7 @@ impl JWK {
 
     /// from_jws transforms a JSON web signature into a JWK. It uses the ACME-derived `alg` field
     /// from the protected header to determine what crypto to use.
+    #[allow(dead_code)]
     fn from_jws(jws: &mut JWS) -> Result<Self, JWSError> {
         let mut aph = jws.protected()?;
         let alg = aph.alg.clone();

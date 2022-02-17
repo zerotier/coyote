@@ -29,9 +29,6 @@ use crate::{
 
 use self::dns::DNSName;
 
-const DEFAULT_NONCE_SIZE: usize = 16;
-const ACME_CONTENT_TYPE: &str = "application/jose+json";
-
 lazy_static! {
     /// List of supported algorithms, with the ACME preferred one first; in our case this is
     /// "ES256".
