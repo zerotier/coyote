@@ -19,11 +19,11 @@ base64 = "^0.13"
 serde_json = "^1.0"
 serde = "^1.0"
 tokio = { version = "^1.16", features = ["full"] }
-ratpack = "^0.1" # { git = "https://github.com/zerotier/ratpack", branch = "main" }
 hyper = "^0.14"
 http = "^0.2"
 url = { version = "^2.2", features = [ "serde" ] }
 deadpool-postgres = { version = "^0.10", features = ["serde"] }
+ratpack = { version = "^0.1", path = "../ratpack", features = ["logging"] }
 log = "^0.4"
 trust-dns-client = "^0.20"
 openssl = "^0.10"
@@ -35,18 +35,26 @@ futures = "^0.3"
 futures-core = "^0.3"
 chrono = { version = "^0.4", features = [ "serde" ] }
 x509-parser = { version = "^0.12", features = [ "ring", "verify", "validate" ] }
+rustls = { version = "^0.20", optional = true }
+rustls-pemfile = { version = "^0.3", optional = true }
+webpki-roots = { version = "^0.22", optional = true }
 
 [lib]
+
+[[example]]
+name = "acmed-tls"
+path = "examples/acmed-tls.rs"
+required-features = ["tls"]
 
 [[example]]
 name = "acmed"
 path = "examples/acmed.rs"
 
+[features]
+tls = ["rustls", "rustls-pemfile", "webpki-roots", "ratpack/tls"]
+
 [dev-dependencies]
 env_logger = "^0.9"
-rustls = "^0.20"
-rustls-pemfile = "^0.3"
-webpki-roots = "^0.22"
 eggshell = "^0.1" # { path = "../eggshell" }
 bollard = "^0.11"
 tempfile = "^3.3"

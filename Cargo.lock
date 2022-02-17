@@ -1236,12 +1236,11 @@ dependencies = [
 [[package]]
 name = "ratpack"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5a13f3016fde9fbad50dd0f7a2cef95b421224908dbe68125a4f5b447bdecb7"
 dependencies = [
  "async-recursion",
  "http",
  "hyper",
+ "log",
  "tokio",
  "tokio-rustls",
  "webpki",
