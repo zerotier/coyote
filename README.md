@@ -5,38 +5,43 @@ your face. You have to code that out yourself.
 
 coyote aims to solve a few problems (not all of these are solved yet; see "Task List" below):
 
-- Provide an alternative to boulder and pebble
 - Provide ACME with backing storage you prefer to use, by way of Rust's traits for storage implementation.
 - Provide ACME in non-conforming scenarios (e.g., behind corporate firewalls)
 - Provide ACME services with hooks into the validation system, so you can implement validations however you feel like.
 - It's a library; make it as big or as small as you like. No need for multiple implementations.
 - A FOSS alternative to the letsencrypt canonical implementation that is _also_ tested against LE's test suite.
 
-`acmed` comes with coyote; it is a complete example canonical implementation against PostgreSQL for backing storage and OpenSSL for crypto. It (deliberately) allows all challenges through and is not meant for production usage.
+`acmed` comes as an example with coyote; it is a complete canonical implementation against PostgreSQL for backing storage. It (deliberately) allows all challenges through and is not meant for production usage.
 
-coyote is intended to let you build an `acmed` without using `acmed` itself, but that will not come until the project is complete. Until then it is a single implementation with enough traits / generic parameters to make alternatives possible later. For example, work to implement a redis-based nonce validation system would just be a trait implementation at the time of this writing, even though it is not available today.
+`coyote` is intended to let you build an ACME service without using `acmed` itself, leveraging the traits and tools available in this library for scaffolding. For example, work to implement a Redis based nonce validation system would just be a trait implementation, even though it is not available in this library.
 
 ## Running `acmed`
 
 [acmed](examples/acmed.rs) is a very small, example implementation of coyote, intended to demonstrate usage of it. It is not meant or designed to be used in a production environment. It does not perform challenges properly, allowing all of them that come in.
 
-You'll need `docker` to launch the postgres instance. Provide `HOSTNAME` to set a host name for TLS service; otherwise `localhost` is assumed. A CA at `ca.pem` and `ca.key` will be generated at the directory you run the `cargo` commands from, which you will need to pass to clients to your certificates. Also, a TLS in-memory cert will be generated to serve the `acmed` instance.
+You'll need `docker` to launch the postgres instance. Plain HTTP works better with `certbot` for testing so you don't have to dink with your roots; if you want to use `caddy` or other ACME clients you will need to use a HTTPS enabled service, see "TLS" below.
 
 To launch:
 
 ```
 $ make postgres
-$ HOSTNAME=tls-hostname.local cargo run --bin acmed
+$ cargo run --example acmed
 ```
 
-It will start a service on `https://${HOSTNAME}:8000` which you can then pass as
+It will start a service on `http://127.0.0.1:8000` which you can then pass as
 the `--server` flag to `certbot`, e.g.:
 
 ```
-certbot --server 'https://${HOSTNAME}:8000' certonly --standalone -d 'foo.com' -m 'erik+github@hollensbe.org' --agree-tos
+certbot --server 'http://127.0.0.1:8000' certonly --standalone -d 'foo.com' -m 'erik+github@hollensbe.org' --agree-tos
 ```
 
+### Running `acmed-tls`
+
+We provide the TLS example as [acmed-tls](examples/acmed-tls.rs); just provide `HOSTNAME` to set a host name for TLS service; otherwise `localhost` is assumed. A CA at `ca.pem` and `ca.key` will be generated at the directory you run the `cargo` commands from, which you will need to pass to clients to your certificates. Also, a TLS in-memory cert will be generated to serve the `acmed` instance. It will start a service on `https://${HOSTNAME}:8000` which you can then pass as the `acme_ca` global directive in caddy.
+
 Otherwise, the use is the same.
+
+### Accessing the database
 
 To access the postgres instance that `acmed` is running against (provided by `make postgres`):
 
@@ -89,6 +94,7 @@ cargo test
     - [ ] Revocation of Certificate
 - Other concerns:
   - [ ] Key Changes (`/key-change` endpoint, see RFC8555 7.3.5)
+  - [ ] Find a good solution to DNS challenges (`trust-dns-client` maybe?)
 
 ### Storage:
 
