@@ -1,7 +1,12 @@
+/// Certificate Authority functionality
 pub mod ca;
+/// Challenge management, including supervisory handlers.
 pub mod challenge;
+/// Types for managing DNS records
 pub mod dns;
+/// ACME HTTP handlers
 pub mod handlers;
+/// ACME JOSE implementation
 pub mod jose;
 
 use std::{collections::HashSet, convert::TryFrom, sync::Arc};
@@ -90,6 +95,9 @@ impl ACMEIdentifier {
 }
 
 #[async_trait]
+/// NonceValidator is a storage trait that controls the generation and validation of nonces, used
+/// heavily in ACME and especially in the `Replay-Nonce` HTTP header present in all calls, and the
+/// `nonce` field in ACME protected headers.
 pub trait NonceValidator {
     /// This function must mutate the underlying storage to prune the nonce it's validating after a
     /// successful fetch. One may use ACMEValidationError::NonceFetchError to specify errors with
@@ -134,6 +142,7 @@ impl NonceValidator for SetValidator {
 }
 
 #[derive(Clone)]
+/// Defines a PostgreSQL-backed nonce validator
 pub struct PostgresNonceValidator(crate::models::Postgres);
 
 impl PostgresNonceValidator {

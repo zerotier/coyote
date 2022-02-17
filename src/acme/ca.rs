@@ -26,6 +26,9 @@ pub(crate) fn st_to_asn1(time: SystemTime) -> Result<Asn1Time, ErrorStack> {
     )
 }
 
+/// CA defines a certificate authority in the standard sense of the word; it is used to sign
+/// certificate signing requests and return them as fully functional certificates. To create one,
+/// use the ::new constructor.
 #[derive(Clone, Debug)]
 pub struct CA {
     certificate: X509,
@@ -33,6 +36,7 @@ pub struct CA {
 }
 
 impl CA {
+    /// new constructs a new certificate authority with a X.509 certificate and private key.
     pub fn new(certificate: X509, private_key: PKey<Private>) -> Self {
         Self {
             certificate,
@@ -40,14 +44,18 @@ impl CA {
         }
     }
 
+    /// returns the certificate
     pub fn certificate(self) -> X509 {
         self.certificate
     }
 
+    /// returns the private key
     pub fn private_key(self) -> PKey<Private> {
         self.private_key
     }
 
+    /// signs a CSR with the CA's private key. The not_before and not_after parameters can be used
+    /// to control its lifetime.
     pub fn generate_and_sign_cert(
         &self,
         req: X509Req,
@@ -115,6 +123,8 @@ impl CA {
         Ok(builder.build())
     }
 
+    /// new_test_ca is a convenience function for creating a quick and dirty CA for use in tests
+    /// and demo applications (such as the examples).
     pub fn new_test_ca() -> Result<Self, ErrorStack> {
         let mut builder = X509::builder()?;
 
@@ -186,15 +196,21 @@ impl CA {
     }
 }
 
+/// CACollector is an async observer which waits for a CA to arrive, and fosters the creation of
+/// signed CSRs as certificates. This allows for the rotation of CA certificates, or delayed
+/// loading, without loss of functionality due to race conditions. Please see the `acmed` example for usage.
 #[derive(Clone, Debug)]
 pub struct CACollector {
     poll_interval: Duration,
     ca: SharedCA,
 }
 
+/// SharedCA is a simple type for managing the locking around a CA.
 type SharedCA = Arc<RwLock<Option<CA>>>;
 
 impl CACollector {
+    /// new is a constructor; the duration provided determines how often the loop will awake and
+    /// process a CA injection.
     pub fn new(poll_interval: Duration) -> Self {
         Self {
             poll_interval,
@@ -202,10 +218,13 @@ impl CACollector {
         }
     }
 
+    /// returns the CA as a SharedCA.
     pub fn ca(self) -> SharedCA {
         self.ca.clone()
     }
 
+    /// majority of callers will use this function to collect the CA. It takes a closure which
+    /// accepts a CA and returns it to this function so that it can overwrite the previous CA.
     pub async fn spawn_collector<F>(&mut self, f: F)
     where
         F: Fn() -> Result<CA, ErrorStack>,
@@ -221,6 +240,8 @@ impl CACollector {
         }
     }
 
+    /// similar to CA::generate_and_sign_cert, this signs the CSR through the SharedCA provided by
+    /// the collector.
     pub async fn sign(
         self,
         req: X509Req,

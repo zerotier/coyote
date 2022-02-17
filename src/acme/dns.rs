@@ -3,6 +3,8 @@ use std::str::FromStr;
 use trust_dns_client::rr::Name;
 
 #[derive(Debug, Clone, PartialEq)]
+/// DNSName is used to provide a serde interface to DNS names. It is not frequently consumed by
+/// external consumers.
 pub struct DNSName(pub(crate) Name);
 
 impl DNSName {
@@ -15,6 +17,7 @@ impl DNSName {
     }
 }
 
+/// serde codec implementation
 pub struct DNSNameVisitor;
 
 impl<'de> Visitor<'de> for DNSNameVisitor {

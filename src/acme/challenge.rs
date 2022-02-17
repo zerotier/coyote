@@ -14,9 +14,13 @@ use super::handlers::order::OrderStatus;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(into = "String")]
+/// ChallengeType is an enum describing the challenge types coyote supports. Currently tls-alpn is
+/// unsupported.
 pub enum ChallengeType {
-    DNS01,  // dns-01 challenge type
-    HTTP01, // http-01 challenge type
+    /// dns-01 challenge type
+    DNS01,
+    /// http-01 challenge type
+    HTTP01,
 }
 
 impl TryFrom<&str> for ChallengeType {
@@ -47,12 +51,16 @@ impl ChallengeType {
 }
 
 #[derive(Clone)]
+/// Challenger is an async supervisor used to perform challenges on demand. This is a simple
+/// monitored queue with expiration applied at every loop iteration.
 pub struct Challenger {
     list: Arc<Mutex<HashMap<String, Challenge>>>,
     expiration: Option<chrono::Duration>,
 }
 
 impl Challenger {
+    /// Construct a new challenger; challenges will last as long as `expiriation` is set to, or
+    /// forever if Option::None.
     pub fn new(expiration: Option<chrono::Duration>) -> Self {
         Self {
             list: Arc::new(Mutex::new(HashMap::new())),
@@ -64,6 +72,9 @@ impl Challenger {
         self.list.lock().await.insert(c.reference.clone(), c);
     }
 
+    /// tick should be called in a loop in its own async routine with an interval between
+    /// iterations. This performs each challenge in the queue and invalidates any expired
+    /// challenges. To commit to storage, call reconcile.
     pub async fn tick<T>(&self, ticker: T)
     where
         T: Fn(Challenge) -> Option<()>,
@@ -118,6 +129,8 @@ impl Challenger {
         }
     }
 
+    /// reconcile should be called after tick. This actually commits the challenge results to the
+    /// backing storage.
     pub async fn reconcile(&self, db: Postgres) -> Result<(), SaveError> {
         let mut lock = self.list.lock().await;
         let mut db_lock = db.client().await?;
