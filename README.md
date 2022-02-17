@@ -18,7 +18,7 @@ coyote is intended to let you build an `acmed` without using `acmed` itself, but
 
 ## Running `acmed`
 
-[acmed](src/acmed.rs) is a very small, example implementation of coyote, intended to demonstrate usage of it. It is not meant or designed to be used in a production environment. It does not perform challenges properly, allowing all of them that come in.
+[acmed](examples/acmed.rs) is a very small, example implementation of coyote, intended to demonstrate usage of it. It is not meant or designed to be used in a production environment. It does not perform challenges properly, allowing all of them that come in.
 
 You'll need `docker` to launch the postgres instance. Provide `HOSTNAME` to set a host name for TLS service; otherwise `localhost` is assumed. A CA at `ca.pem` and `ca.key` will be generated at the directory you run the `cargo` commands from, which you will need to pass to clients to your certificates. Also, a TLS in-memory cert will be generated to serve the `acmed` instance.
 

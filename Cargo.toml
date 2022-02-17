@@ -46,6 +46,6 @@ webpki-roots = "^0.22"
 
 [lib]
 
-[[bin]]
+[[example]]
 name = "acmed"
-path = "src/acmed.rs"
+path = "examples/acmed.rs"
