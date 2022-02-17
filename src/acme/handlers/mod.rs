@@ -29,6 +29,8 @@ pub(crate) mod order;
 
 pub(crate) const REPLAY_NONCE_HEADER: &str = "Replay-Nonce";
 
+/// ServiceState is the carried state globally for the application. It contains many items the
+/// handlers need to function.
 #[derive(Clone)]
 pub struct ServiceState {
     baseurl: url::Url,
@@ -39,6 +41,7 @@ pub struct ServiceState {
 }
 
 impl ServiceState {
+    /// constructor for the service state
     pub fn new(
         baseurl: String,
         db: Postgres,
@@ -56,6 +59,7 @@ impl ServiceState {
     }
 }
 
+/// HandlerState is the state carried between each request handler for a single request.
 #[derive(Clone)]
 pub struct HandlerState {
     jws: Option<crate::acme::jose::JWS>,
@@ -188,6 +192,8 @@ macro_rules! jws_handler {
     };
 }
 
+/// configure_routes sets up the application's routing framework. It needs to be called before
+/// serving the application over TCP.
 pub fn configure_routes(app: &mut App<ServiceState, HandlerState>, rootpath: Option<&str>) {
     let rootpath = rootpath.unwrap_or("/").to_string();
 

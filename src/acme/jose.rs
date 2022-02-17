@@ -1,5 +1,3 @@
-pub mod crypto;
-
 use std::{
     convert::{TryFrom, TryInto},
     time::SystemTime,
@@ -7,24 +5,32 @@ use std::{
 
 use openssl::{
     bn::BigNum,
-    ec::{EcKey, EcPointRef},
+    ec::{EcGroup, EcKey, EcPointRef},
     ecdsa::EcdsaSig,
     hash::MessageDigest,
+    nid::Nid,
     pkey::{PKey, Private, Public},
     rsa::Rsa,
     sha::sha256,
     sign::{Signer, Verifier},
 };
+
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    acme::{NonceValidator, ACME_EXPECTED_ALGS},
+    acme::{NonceValidator, PostgresNonceValidator, ACME_EXPECTED_ALGS},
     errors::{acme::*, ACMEValidationError},
     util::{make_nonce, to_base64},
 };
 
-use super::PostgresNonceValidator;
+use lazy_static::lazy_static;
+
+const NID_ES256: Nid = Nid::X9_62_PRIME256V1;
+
+lazy_static! {
+    pub static ref EC_GROUP: EcGroup = EcGroup::from_curve_name(NID_ES256).unwrap();
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ACMEProtectedHeader {
@@ -124,7 +130,7 @@ impl TryFrom<&EcPointRef> for ACMEKey {
         let mut ctx = openssl::bn::BigNumContext::new()?;
         let mut x = openssl::bn::BigNum::new()?;
         let mut y = openssl::bn::BigNum::new()?;
-        ec.affine_coordinates_gfp(&crypto::EC_GROUP, &mut x, &mut y, &mut ctx)?;
+        ec.affine_coordinates_gfp(&EC_GROUP, &mut x, &mut y, &mut ctx)?;
         Ok((&mut JWK {
             x: Some(base64::encode_config(&x.to_vec(), base64::URL_SAFE_NO_PAD)),
             y: Some(base64::encode_config(&y.to_vec(), base64::URL_SAFE_NO_PAD)),
@@ -245,7 +251,7 @@ impl JWK {
         let y = base64::decode_config(self.y.clone().unwrap(), base64::URL_SAFE_NO_PAD)?;
 
         let key = EcKey::from_public_key_affine_coordinates(
-            &crypto::EC_GROUP,
+            &EC_GROUP,
             BigNum::from_slice(&x)?.as_ref(),
             BigNum::from_slice(&y)?.as_ref(),
         )?;
@@ -515,7 +521,7 @@ mod tests {
             let handle = tokio::spawn(async move {
                 for _ in 0..100 {
                     let mut jws = JWS::new(&protected, &payload);
-                    let eckey = EcKey::generate(super::crypto::EC_GROUP.as_ref()).unwrap();
+                    let eckey = EcKey::generate(super::EC_GROUP.as_ref()).unwrap();
 
                     let signed = jws.sign(super::ACMEPrivateKey::ECDSA(eckey.clone()));
                     assert_that!(signed).is_ok();
@@ -558,7 +564,7 @@ mod tests {
         use spectral::prelude::*;
         use std::convert::TryInto;
 
-        let eckey = EcKey::generate(&super::crypto::EC_GROUP).unwrap();
+        let eckey = EcKey::generate(&super::EC_GROUP).unwrap();
         let jwk: Result<super::ACMEKey, super::JWSError> = eckey.public_key().try_into();
         assert_that!(jwk).is_ok();
 
@@ -570,11 +576,9 @@ mod tests {
         assert_that!(eckey2).is_some();
         let mut ctx = openssl::bn::BigNumContext::new().unwrap();
 
-        let res = eckey.public_key().eq(
-            &super::crypto::EC_GROUP,
-            eckey2.unwrap().public_key(),
-            &mut ctx,
-        );
+        let res = eckey
+            .public_key()
+            .eq(&super::EC_GROUP, eckey2.unwrap().public_key(), &mut ctx);
         assert_that!(res).is_ok();
         assert_that!(res.unwrap()).is_true();
 
