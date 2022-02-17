@@ -98,17 +98,6 @@ pub(crate) async fn uri_to_url(
     baseurl.join(&uri.to_string())
 }
 
-async fn handle_log_request(
-    req: Request<Body>,
-    resp: Option<Response<Body>>,
-    _params: Params,
-    _app: App<ServiceState, HandlerState>,
-    state: HandlerState,
-) -> HTTPResult<HandlerState> {
-    log::info!("{} request to {}", req.method(), req.uri().path());
-    Ok((req, resp, state))
-}
-
 async fn handle_nonce(
     req: Request<Body>,
     _resp: Option<Response<Body>>,
@@ -195,7 +184,7 @@ async fn handle_jws(
 
 macro_rules! jws_handler {
     ($($x:path)*) => {
-        compose_handler!(handle_log_request, handle_nonce, handle_jws, $($x)*)
+        compose_handler!(handle_nonce, handle_jws, $($x)*)
     };
 }
 
@@ -204,16 +193,16 @@ pub fn configure_routes(app: &mut App<ServiceState, HandlerState>, rootpath: Opt
 
     app.get(
         &(rootpath.clone()),
-        compose_handler!(handle_log_request, handle_nonce, directory),
+        compose_handler!(handle_nonce, directory),
     );
 
     app.head(
         &(rootpath.clone() + "nonce"),
-        compose_handler!(handle_log_request, handle_nonce, new_nonce_head),
+        compose_handler!(handle_nonce, new_nonce_head),
     );
     app.get(
         &(rootpath.clone() + "nonce"),
-        compose_handler!(handle_log_request, handle_nonce, new_nonce_get),
+        compose_handler!(handle_nonce, new_nonce_get),
     );
 
     app.post(&(rootpath.clone() + "account"), jws_handler!(new_account));
