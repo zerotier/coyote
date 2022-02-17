@@ -430,8 +430,6 @@ impl JWS {
 }
 
 mod tests {
-    extern crate spectral;
-
     #[tokio::test(flavor = "multi_thread")]
     async fn aph_test_validate() {
         use super::*;

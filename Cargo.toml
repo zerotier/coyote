@@ -16,7 +16,6 @@ keywords = ["ACME", "letsencrypt", "zerotier"]
 thiserror = "^1.0"
 rand = "^0.8"
 base64 = "^0.13"
-spectral = "^0.6"
 serde_json = "^1.0"
 serde = "^1.0"
 tokio = { version = "^1.16", features = ["full"] }
@@ -28,24 +27,27 @@ deadpool-postgres = { version = "^0.10", features = ["serde"] }
 log = "^0.4"
 env_logger = "^0.9"
 trust-dns-client = "^0.20"
-tempfile = "^3.3"
 openssl = "^0.10"
 lazy_static = "^1.4"
 refinery = { version = "^0.8", features = ["tokio-postgres"] }
 tokio-postgres = { version = "^0.7", features = ["with-serde_json-1", "with-chrono-0_4"] }
 async-trait = "^0.1"
-eggshell = "^0.1" # { path = "../eggshell" }
-bollard = "^0.11"
 futures = "^0.3"
 futures-core = "^0.3"
 chrono = { version = "^0.4", features = [ "serde" ] }
 x509-parser = { version = "^0.12", features = [ "ring", "verify", "validate" ] }
-rustls = "^0.20"
-rustls-pemfile = "^0.3"
-webpki-roots = "^0.22"
 
 [lib]
 
 [[example]]
 name = "acmed"
 path = "examples/acmed.rs"
+
+[dev-dependencies]
+rustls = "^0.20"
+rustls-pemfile = "^0.3"
+webpki-roots = "^0.22"
+eggshell = "^0.1" # { path = "../eggshell" }
+bollard = "^0.11"
+tempfile = "^3.3"
+spectral = "^0.6"
