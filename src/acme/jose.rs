@@ -29,9 +29,12 @@ use lazy_static::lazy_static;
 const NID_ES256: Nid = Nid::X9_62_PRIME256V1;
 
 lazy_static! {
-    pub static ref EC_GROUP: EcGroup = EcGroup::from_curve_name(NID_ES256).unwrap();
+    static ref EC_GROUP: EcGroup = EcGroup::from_curve_name(NID_ES256).unwrap();
 }
 
+/// ACMEProtectedHeader identifies an ACME protected header per RFC8555. Typically this function is
+/// deserialized into, but in the event you need a "fresh" ACME protected header, the functions
+/// [ACMEProtectedHeader::new_jwk] and [ACMEProtectedHeader::new_kid] exist for construction.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ACMEProtectedHeader {
     alg: String,
@@ -44,6 +47,9 @@ pub struct ACMEProtectedHeader {
 }
 
 impl ACMEProtectedHeader {
+    /// This function constructs an ACME protected header from a JWK and the previous URL/nonce
+    /// used to lead to this JWK instantiation. The constructed value will default to using an
+    /// `alg` field of ES256, which is per [[struct@super::ACME_EXPECTED_ALGS]] preference.
     pub fn new_jwk(jwk: JWK, url: Url, nonce: String) -> Self {
         Self {
             url,
@@ -54,6 +60,9 @@ impl ACMEProtectedHeader {
         }
     }
 
+    /// This function constructs an ACME protected header from a key id, and the previous URL/nonce
+    /// used to lead to this JWK instantiation. The constructed value will default to using an
+    /// `alg` field of ES256, which is per [[struct@super::ACME_EXPECTED_ALGS]] preference.
     pub fn new_kid(kid: Url, url: Url, nonce: String) -> Self {
         Self {
             url,
@@ -64,18 +73,33 @@ impl ACMEProtectedHeader {
         }
     }
 
+    /// nonce returns the replay-nonce supplied in this protected header.
     pub fn nonce(&self) -> String {
         self.nonce.clone()
     }
 
+    /// kid returns the key identifier supplied in this protected header, or None if no key id
+    /// existed.
     pub fn kid(&self) -> Option<Url> {
         self.kid.clone()
     }
 
+    /// jwk returns the JSON web key supplied in this protected header, or None if no key
+    /// existed.
     pub fn jwk(&mut self) -> Option<&mut JWK> {
         self.jwk.as_mut()
     }
 
+    /// validate performs a ACME validation of the protected header, which includes:
+    /// - validating the nonce exists
+    /// - validating the nonce can be decoded
+    /// - validating we at least have one of the two: jwk, key id.
+    /// - validating the URL in the header equals the request URL (provided as a part of the
+    ///   function call)
+    /// - validating we have a salient `alg` field, which is in
+    ///   [[struct@super::ACME_EXPECTED_ALGS]].
+    /// - finally, the nonce is validated against storage, which is expected to implement
+    ///   [super::NonceValidator].
     pub async fn validate(
         &self,
         request_url: Url,
@@ -111,12 +135,14 @@ impl ACMEProtectedHeader {
     }
 }
 
+/// ACME Public Key type enumeration
 #[derive(Debug, Clone)]
 pub enum ACMEKey {
     ECDSA(EcKey<Public>),
     RSA(Rsa<Public>),
 }
 
+/// ACME Private Key type enumeration
 #[derive(Debug, Clone)]
 pub enum ACMEPrivateKey {
     ECDSA(EcKey<Private>),
@@ -204,6 +230,7 @@ impl TryFrom<JWS> for ACMEKey {
     }
 }
 
+/// JWK is the implementation of JSON web keys: RFC7515.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JWK {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -224,6 +251,7 @@ pub struct JWK {
 }
 
 impl JWK {
+    /// into_rsa transforms the JWK into a RSA public key
     fn into_rsa(&self) -> Result<Rsa<Public>, JWSError> {
         if self.n.is_none() || self.e.is_none() {
             return Err(JWSError::Encode(
@@ -240,6 +268,7 @@ impl JWK {
         )?)
     }
 
+    /// into_ec transforms the JWK into a EC public key
     fn into_ec(&self) -> Result<EcKey<Public>, JWSError> {
         if self.x.is_none() || self.y.is_none() {
             return Err(JWSError::Encode(
@@ -259,6 +288,8 @@ impl JWK {
         Ok(key)
     }
 
+    /// from_jws transforms a JSON web signature into a JWK. It uses the ACME-derived `alg` field
+    /// from the protected header to determine what crypto to use.
     fn from_jws(jws: &mut JWS) -> Result<Self, JWSError> {
         let mut aph = jws.protected()?;
         let alg = aph.alg.clone();
@@ -292,14 +323,22 @@ impl JWK {
     }
 }
 
+/// JWS is an implementation of the JSON web signature RFC: RFC7515. The majority of API traffic
+/// uses this structure to talk.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JWS {
+    /// protected is the envelope, more or less, of the request. This corresponds to the
+    /// [ACMEProtectedHeader] in most cases.
     protected: String,
+    /// payload is more dynamic and usually corresponds to whatever request is being made. This
+    /// field usually needs to have its type be dynamically derived.
     payload: String,
+    /// the signature verifies that the key has indeed signed the payload.
     signature: String,
 }
 
 impl JWS {
+    /// constructor taking a [ACMEProtectedHeader] and arbitrary type payload.
     pub fn new<T>(protected: &ACMEProtectedHeader, payload: &T) -> Self
     where
         T: serde::Serialize + ?Sized,
@@ -311,6 +350,7 @@ impl JWS {
         }
     }
 
+    /// returns the [ACMEProtectedHeader].
     pub fn protected(&mut self) -> Result<ACMEProtectedHeader, JWSError> {
         let res = serde_json::from_slice::<ACMEProtectedHeader>(&base64::decode_config(
             self.protected.clone(),
@@ -320,6 +360,7 @@ impl JWS {
         Ok(res)
     }
 
+    /// returns the payload. The type must be [serde_json] compatible.
     pub fn payload<T>(&self) -> Result<T, JWSError>
     where
         T: for<'de> serde::Deserialize<'de>,
@@ -330,6 +371,7 @@ impl JWS {
         )?)?)
     }
 
+    /// verify verifies the protected header and payload were signed by the public key provided.
     pub fn verify(&self, key: ACMEKey) -> Result<bool, JWSValidationError> {
         let to_verify = format!("{}.{}", self.protected, self.payload);
         let digest = sha256(to_verify.as_bytes());
@@ -359,15 +401,18 @@ impl JWS {
         }
     }
 
+    /// verify_with_signature verifies with a third party signature
     pub fn verify_with_signature(
         &mut self,
         key: ACMEKey,
         signature: String,
     ) -> Result<bool, JWSValidationError> {
+        // FIXME is this function even in use?
         self.signature = signature;
         self.verify(key)
     }
 
+    /// sign the header and payload with a private key.
     pub fn sign(&mut self, key: ACMEPrivateKey) -> Result<Self, JWSError> {
         let to_sign = format!("{}.{}", self.protected, self.payload);
 
