@@ -1,6 +1,6 @@
 [package]
 name = "coyote"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Erik Hollensbe <git@hollensbe.org>", "Adam Ierymenko <adam.ierymenko@zerotier.com>"]
 edition = "2021"
 license = "BSD-3-Clause"
