@@ -1,5 +1,5 @@
 /target
-coyote.db
-error.log
+/coyote.db
+/error.log
 /ca.*
-caddy
+/caddy
