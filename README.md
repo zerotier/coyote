@@ -53,9 +53,23 @@ psql -U postgres -h localhost coyote
 
 `docker` is required to run the tests. The tests take around 70 seconds to run on a 5900X and use all 24 threads most of the test runtime. Be mindful of the time they take, especially when running them on a slower system.
 
+If you like full throttle:
+
 ```
 cargo test
 ```
+
+Add `DEBUG=1` for verbose test logging.
+
+If you'd like tests that don't punish your processor, you can run:
+
+```
+make test
+# or
+make debug-test
+```
+
+To accomplish the same using roughly only half of the CPU time.
 
 ## Task List
 

@@ -4,7 +4,12 @@ postgres: stop-postgres
 stop-postgres:
 	docker rm -f acmed-postgres || :
 
-run-with-backtrace:
-	RUST_BACKTRACE=1 rustup run nightly cargo run
+CARGO_TEST=cargo test -- --test-threads $$(($$(nproc) / 2))
+
+test:
+	${CARGO_TEST}
+
+debug-test:
+	DEBUG=1 cargo test -- --nocapture --test-threads $$(($$(nproc) / 2))
 
 .PHONY: postgres stop-postgres
