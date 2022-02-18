@@ -33,6 +33,7 @@ use tokio::sync::Mutex;
 use url::Url;
 
 const DEBUG_VAR: &str = "DEBUG";
+const HBA_CONFIG_PATH: &str = "hack/pg_hba.conf";
 
 static INIT: Once = Once::new();
 
@@ -92,8 +93,6 @@ async fn wait_for_images(images: Vec<&str>) -> () {
         }
     }
 }
-
-const HBA_CONFIG_PATH: &str = "hack/pg_hba.conf";
 
 impl PGTest {
     pub async fn new(name: &str) -> Result<Self, eggshell::Error> {
