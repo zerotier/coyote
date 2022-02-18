@@ -34,11 +34,14 @@ use tokio::sync::Mutex;
 use url::Url;
 
 const DEBUG_VAR: &str = "DEBUG";
+const ZLINT_WARN_VAR: &str = "ZLINT_WARN";
+
 const HBA_CONFIG_PATH: &str = "hack/pg_hba.conf";
 
 static INIT: Once = Once::new();
 
 lazy_static! {
+    static ref ZLINT_WARN: bool = !std::env::var(ZLINT_WARN_VAR).unwrap_or_default().is_empty();
     static ref DEBUG: bool = !std::env::var(DEBUG_VAR).unwrap_or_default().is_empty();
     static ref IMAGES: Vec<&'static str> = vec![
         "certbot/certbot:latest",
@@ -334,6 +337,12 @@ impl TestService {
                     "fail" => {
                         let key = key.clone();
                         s.insert(key);
+                    }
+                    "warn" => {
+                        if *ZLINT_WARN {
+                            let key = key.clone();
+                            s.insert(key);
+                        }
                     }
                     _ => {}
                 };
