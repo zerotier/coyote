@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use std::collections::{HashMap, HashSet};
 use std::process::Stdio;
 use std::sync::Once;
 use std::{sync::Arc, time::Duration};
@@ -204,6 +205,9 @@ pub(crate) enum ContainerError {
 
     #[error("container failed with exit status: {0}: {1}")]
     Failed(i64, String),
+
+    #[error("zlint failures follow: {0:?}")]
+    ZLint(HashSet<String>),
 }
 
 fn short_hash(s: String) -> String {
@@ -287,7 +291,7 @@ impl TestService {
             .launch(
                 name,
                 Config {
-                    attach_stdout: Some(*DEBUG),
+                    attach_stdout: Some(true),
                     attach_stderr: Some(*DEBUG),
                     image: Some("zerotier/zlint:latest".to_string()),
                     entrypoint: Some(
@@ -318,7 +322,28 @@ impl TestService {
             return Err(ContainerError::Generic(e.to_string()));
         }
 
-        self.wait(name).await?;
+        let res = self.wait(name, true).await?;
+        let m: HashMap<String, HashMap<String, String>> =
+            serde_json::from_str(&res.unwrap()).unwrap();
+
+        let mut s = HashSet::new();
+
+        for (key, result) in m {
+            for (_, result) in result {
+                match result.as_str() {
+                    "fail" => {
+                        let key = key.clone();
+                        s.insert(key);
+                    }
+                    _ => {}
+                };
+            }
+        }
+
+        if !s.is_empty() {
+            return Err(ContainerError::ZLint(s));
+        }
+
         return Ok(());
     }
 
@@ -378,7 +403,7 @@ impl TestService {
             return Err(ContainerError::Generic(e.to_string()));
         }
 
-        self.wait(name).await?;
+        self.wait(name, false).await?;
         return Ok(certs);
     }
 
@@ -399,7 +424,7 @@ impl TestService {
             .await
     }
 
-    async fn wait(&self, name: &str) -> Result<(), ContainerError> {
+    async fn wait(&self, name: &str, pass_stdout: bool) -> Result<Option<String>, ContainerError> {
         loop {
             tokio::time::sleep(Duration::new(1, 0)).await;
 
@@ -442,8 +467,25 @@ impl TestService {
                         res.status_code,
                         error.unwrap_or_default(),
                     ));
+                } else if pass_stdout {
+                    let logs = locked
+                        .logs::<String>(
+                            name,
+                            Some(LogsOptions::<String> {
+                                stdout: true,
+                                ..Default::default()
+                            }),
+                        )
+                        .try_next()
+                        .await;
+
+                    if let Ok(Some(logs)) = logs {
+                        return Ok(Some(logs.to_string()));
+                    } else {
+                        return Err(ContainerError::Generic("no logs returned".to_string()));
+                    }
                 } else {
-                    return Ok(());
+                    return Ok(None);
                 }
             }
         }
