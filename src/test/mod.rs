@@ -34,8 +34,15 @@ use url::Url;
 
 const DEBUG_VAR: &str = "DEBUG";
 
-fn is_debug() -> bool {
-    !std::env::var(DEBUG_VAR).unwrap_or_default().is_empty()
+static INIT: Once = Once::new();
+
+lazy_static! {
+    static ref DEBUG: bool = !std::env::var(DEBUG_VAR).unwrap_or_default().is_empty();
+    static ref IMAGES: Vec<&'static str> = vec![
+        "certbot/certbot:latest",
+        "postgres:latest",
+        "zerotier/zlint:latest",
+    ];
 }
 
 impl From<MigrationError> for eggshell::Error {
@@ -60,7 +67,7 @@ fn pull_images(images: Vec<&str>) -> () {
 
     for image in images {
         let mut cmd = &mut std::process::Command::new("docker");
-        if !is_debug() {
+        if !*DEBUG {
             cmd = cmd.stdout(Stdio::null()).stderr(Stdio::null());
         }
 
@@ -86,22 +93,13 @@ async fn wait_for_images(images: Vec<&str>) -> () {
     }
 }
 
-static INIT: Once = Once::new();
-lazy_static! {
-    static ref IMAGES: Vec<&'static str> = vec![
-        "certbot/certbot:latest",
-        "postgres:latest",
-        "zerotier/zlint:latest",
-    ];
-}
-
 const HBA_CONFIG_PATH: &str = "hack/pg_hba.conf";
 
 impl PGTest {
     pub async fn new(name: &str) -> Result<Self, eggshell::Error> {
         INIT.call_once(|| {
             let mut builder = &mut env_logger::builder();
-            if is_debug() {
+            if *DEBUG {
                 builder = builder.filter_level(log::LevelFilter::Info)
             }
             builder.init();
@@ -118,7 +116,7 @@ impl PGTest {
         let docker = Arc::new(Mutex::new(Docker::connect_with_local_defaults().unwrap()));
         let mut gs = EggShell::new(docker.clone()).await?;
 
-        if is_debug() {
+        if *DEBUG {
             gs.set_debug(true)
         }
 
@@ -286,8 +284,8 @@ impl TestService {
             .launch(
                 name,
                 Config {
-                    attach_stdout: Some(is_debug()),
-                    attach_stderr: Some(is_debug()),
+                    attach_stdout: Some(*DEBUG),
+                    attach_stderr: Some(*DEBUG),
                     image: Some("zerotier/zlint:latest".to_string()),
                     entrypoint: Some(
                         vec!["/bin/sh", "-c"]
@@ -387,12 +385,7 @@ impl TestService {
         config: Config<String>,
         start_opts: Option<StartContainerOptions<String>>,
     ) -> Result<(), eggshell::Error> {
-        self.pg
-            .clone()
-            .eggshell()
-            .lock()
-            .await
-            .set_debug(is_debug());
+        self.pg.clone().eggshell().lock().await.set_debug(*DEBUG);
 
         self.pg
             .clone()
@@ -426,8 +419,8 @@ impl TestService {
                         .logs::<String>(
                             name,
                             Some(LogsOptions::<String> {
-                                stderr: is_debug(),
-                                stdout: is_debug(),
+                                stderr: *DEBUG,
+                                stdout: *DEBUG,
                                 ..Default::default()
                             }),
                         )
@@ -436,7 +429,7 @@ impl TestService {
                     if let Ok(Some(logs)) = logs {
                         error = Some(format!("{}", logs));
                         let logs = logs.into_bytes();
-                        if logs.len() > 50 && is_debug() {
+                        if logs.len() > 50 && *DEBUG {
                             std::fs::write("error.log", logs).unwrap();
                             error = Some("error too long: error written to error.log".to_string())
                         }
