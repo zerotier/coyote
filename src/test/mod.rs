@@ -275,7 +275,11 @@ impl TestService {
         }
     }
 
-    pub(crate) async fn zlint(&self, certs: Arc<TempDir>) -> Result<(), ContainerError> {
+    pub(crate) async fn zlint(
+        &self,
+        domain: &str,
+        certs: Arc<TempDir>,
+    ) -> Result<(), ContainerError> {
         log::info!("letsencrypt dir: {}", certs.path().display());
         let name = &format!("zlint-{}", short_hash(make_nonce(None)));
 
@@ -292,10 +296,10 @@ impl TestService {
                             .map(|c| c.to_string())
                             .collect::<Vec<String>>(),
                     ),
-                    cmd: Some(vec![
-                        "set -e; for file in /etc/letsencrypt/live/*/fullchain.pem; do zlint $file; done"
-                            .to_string(),
-                    ]),
+                    cmd: Some(vec![format!(
+                        "zlint /etc/letsencrypt/live/{}/fullchain.pem",
+                        domain
+                    )]),
                     host_config: Some(HostConfig {
                         binds: Some(vec![format!(
                             "{}:{}",

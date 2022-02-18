@@ -653,7 +653,7 @@ mod tests {
                 assert_that!(res).is_ok();
             }
 
-            assert_that!(srv.zlint(dir.clone()).await).is_ok();
+            assert_that!(srv.zlint("foo.com", dir.clone()).await).is_ok();
         }
     }
 
@@ -698,7 +698,7 @@ mod tests {
                 assert_that!(res).is_ok();
             }
 
-            assert_that!(srv.zlint(dir.clone()).await).is_ok();
+            assert_that!(srv.zlint(domain, dir.clone()).await).is_ok();
         }
     }
 }
