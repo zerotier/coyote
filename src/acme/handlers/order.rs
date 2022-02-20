@@ -16,13 +16,14 @@ use crate::{
     models::{order::Challenge, Record},
 };
 
-use super::{uri_to_url, HandlerState, ServiceState};
+use super::{uri_to_url, HandlerState, ServiceState, REPLAY_NONCE_HEADER};
 
 /// RFC8555 7.1.3. Detailed read.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_deserializing)]
     pub status: Option<OrderStatus>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expires: Option<chrono::DateTime<chrono::Local>>, // required for pending and valid states
@@ -34,10 +35,13 @@ pub struct Order {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<crate::errors::Error>,
     // read 7.1.3's missive on this + section 7.5
+    #[serde(skip_deserializing)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub authorizations: Option<Vec<Url>>,
+    #[serde(skip_deserializing)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub finalize: Option<Url>,
+    #[serde(skip_deserializing)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub certificate: Option<Url>,
 }
@@ -387,13 +391,12 @@ pub(crate) async fn get_certificate(
             let mut chain = cert.certificate;
             chain.append(&mut cacert);
 
-            let url = uri_to_url(appstate.baseurl.clone(), req.uri().clone()).await?;
-
             return Ok((
                 req,
                 Some(
-                    state
-                        .decorate_response(url, Response::builder())?
+                    Response::builder()
+                        .header("content-type", "application/pem-certificate-chain")
+                        .header(REPLAY_NONCE_HEADER, state.nonce.clone().unwrap())
                         .status(StatusCode::OK)
                         .body(Body::from(chain))
                         .unwrap(),

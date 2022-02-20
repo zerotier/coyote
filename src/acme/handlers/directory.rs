@@ -1,4 +1,4 @@
-use super::{uri_to_url, HandlerState, ServiceState};
+use super::{uri_to_url, HandlerState, ServiceState, REPLAY_NONCE_HEADER};
 use ratpack::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -58,14 +58,15 @@ pub(crate) async fn directory(
         new_authz: url.join("./authz")?,
         revoke_cert: url.join("./revoke")?,
         key_change: url.join("./key")?,
-        meta: Some(DirectoryMeta::default()),
+        meta: None,
     };
 
     Ok((
         req,
         Some(
-            state
-                .decorate_response(url, Response::builder())?
+            Response::builder()
+                .header("content-type", "application/json")
+                .header(REPLAY_NONCE_HEADER, state.nonce.clone().unwrap())
                 .status(StatusCode::OK)
                 .body(Body::from(serde_json::to_string(&dir)?))
                 .unwrap(),
@@ -77,7 +78,7 @@ pub(crate) async fn directory(
 mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn test_basic_directory() {
-        use super::{super::*, Directory, DirectoryMeta};
+        use super::{super::*, Directory};
         use crate::test::PGTest;
         use ratpack::app::TestApp;
         use spectral::prelude::*;
@@ -111,7 +112,7 @@ mod tests {
             new_authz: "http://example.com/authz".parse().unwrap(),
             revoke_cert: "http://example.com/revoke".parse().unwrap(),
             key_change: "http://example.com/key".parse().unwrap(),
-            meta: Some(DirectoryMeta::default()),
+            meta: None,
         });
 
         let mut app = App::with_state(
@@ -140,7 +141,7 @@ mod tests {
             new_authz: "http://example.com/acme/authz".parse().unwrap(),
             revoke_cert: "http://example.com/acme/revoke".parse().unwrap(),
             key_change: "http://example.com/acme/key".parse().unwrap(),
-            meta: Some(DirectoryMeta::default()),
+            meta: None,
         });
     }
 }

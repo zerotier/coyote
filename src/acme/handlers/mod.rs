@@ -28,7 +28,7 @@ pub(crate) mod nonce;
 pub(crate) mod order;
 
 const REPLAY_NONCE_HEADER: &str = "Replay-Nonce";
-const ACME_CONTENT_TYPE: &str = "application/jose+json";
+const ACME_CONTENT_TYPE: &str = "application/json";
 
 /// ServiceState is the carried state globally for the application. It contains many items the
 /// handlers need to function.

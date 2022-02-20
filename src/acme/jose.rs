@@ -29,7 +29,7 @@ use lazy_static::lazy_static;
 const NID_ES256: Nid = Nid::X9_62_PRIME256V1;
 
 lazy_static! {
-    static ref EC_GROUP: EcGroup = EcGroup::from_curve_name(NID_ES256).unwrap();
+    pub(crate) static ref EC_GROUP: EcGroup = EcGroup::from_curve_name(NID_ES256).unwrap();
 }
 
 /// ACMEProtectedHeader identifies an ACME protected header per RFC8555. Typically this function is
@@ -199,9 +199,10 @@ impl TryFrom<&mut JWK> for ACMEKey {
     type Error = JWSError;
 
     fn try_from(jwk: &mut JWK) -> Result<Self, Self::Error> {
+        log::info!("{}", jwk.kty);
         match jwk.kty.as_str() {
             "RSA" => Ok(ACMEKey::RSA(jwk.into_rsa()?)),
-            "EC" => Ok(ACMEKey::ECDSA(jwk.into_ec()?)),
+            "EC" | "ECDSA" => Ok(ACMEKey::ECDSA(jwk.into_ec()?)),
             _ => Err(JWSError::InvalidPublicKey),
         }
     }
@@ -212,7 +213,7 @@ impl TryInto<ACMEKey> for JWK {
     fn try_into(self) -> Result<ACMEKey, Self::Error> {
         match self.kty.as_str() {
             "RSA" => Ok(ACMEKey::RSA(self.into_rsa()?)),
-            "EC" => Ok(ACMEKey::ECDSA(self.into_ec()?)),
+            "EC" | "ECDSA" => Ok(ACMEKey::ECDSA(self.into_ec()?)),
             _ => Err(JWSError::InvalidPublicKey),
         }
     }
