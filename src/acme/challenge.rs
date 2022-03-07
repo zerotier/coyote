@@ -195,6 +195,7 @@ mod tests {
             reference: make_nonce(None),
             token: make_nonce(None),
             status: OrderStatus::Processing,
+            issuing_address: "127.0.0.1".to_string(),
             created_at: chrono::DateTime::<chrono::Local>::from(std::time::SystemTime::now()),
             deleted_at: None,
             validated: None,
@@ -225,6 +226,7 @@ mod tests {
             reference: make_nonce(None),
             token: make_nonce(None),
             status: OrderStatus::Processing,
+            issuing_address: "127.0.0.1".to_string(),
             created_at: chrono::DateTime::<chrono::Local>::from(std::time::SystemTime::now()),
             deleted_at: None,
             validated: None,
@@ -300,6 +302,7 @@ mod tests {
                         reference: make_nonce(None),
                         challenge_type: ChallengeType::DNS01,
                         status: OrderStatus::Pending,
+                        issuing_address: "127.0.0.1".to_string(),
                         created_at: chrono::DateTime::<chrono::Local>::from(
                             std::time::SystemTime::now(),
                         ),

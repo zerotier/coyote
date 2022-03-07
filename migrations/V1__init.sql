@@ -48,6 +48,7 @@ create table orders_challenges (
   identifier varchar not null,
   token varchar not null,
   status varchar not null,
+  issuing_address varchar not null,
   validated timestamptz,
   created_at timestamptz default CURRENT_TIMESTAMP not null,
   deleted_at timestamptz

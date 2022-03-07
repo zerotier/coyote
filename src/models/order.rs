@@ -369,6 +369,7 @@ pub struct Challenge {
     pub identifier: String,
     pub token: String,
     pub reference: String,
+    pub issuing_address: String,
     pub status: OrderStatus,
     pub validated: Option<chrono::DateTime<chrono::Local>>,
     pub created_at: chrono::DateTime<chrono::Local>,
@@ -382,6 +383,7 @@ impl Challenge {
         authorization_id: String,
         challenge_type: ChallengeType,
         identifier: String,
+        issuing_address: String,
         status: OrderStatus,
     ) -> Self {
         Self {
@@ -392,6 +394,7 @@ impl Challenge {
             identifier,
             token: make_nonce(None),
             reference: make_nonce(None),
+            issuing_address,
             status,
             validated: None,
             created_at: chrono::DateTime::<chrono::Local>::from(std::time::SystemTime::now()),
@@ -454,6 +457,7 @@ impl Challenge {
             authorization_id: result.get("authorization_id"),
             challenge_type: ct.clone(),
             identifier: id.to_string(),
+            issuing_address: result.get("issuing_address"),
             validated: result.get("validated"),
             reference: result.get("reference"),
             token: result.get("token"),
@@ -467,8 +471,8 @@ impl Challenge {
         let mut client = db.client().await?;
         let tx = client.transaction().await?;
         let res = tx.query_one(
-            "insert into orders_challenges (order_id, authorization_id, challenge_type, identifier, token, reference, status, created_at, deleted_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id",
-            &[&self.order_id.clone(), &self.authorization_id.clone(), &self.challenge_type.clone().to_string(), &self.identifier.clone().to_string(), &self.token.clone(), &self.reference.clone(), &self.status.clone().to_string(), &self.created_at, &self.deleted_at],
+            "insert into orders_challenges (order_id, authorization_id, challenge_type, issuing_address, identifier, token, reference, status, created_at, deleted_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id",
+            &[&self.order_id.clone(), &self.authorization_id.clone(), &self.challenge_type.clone().to_string(), &self.issuing_address, &self.identifier.clone().to_string(), &self.token.clone(), &self.reference.clone(), &self.status.clone().to_string(), &self.created_at, &self.deleted_at],
             ).await?;
 
         let id = res.get("id");
@@ -530,8 +534,8 @@ impl RecordList<String> for Challenge {
 
     async fn append(&self, order_id: String, tx: &Transaction<'_>) -> Result<Vec<Self>, SaveError> {
         tx.execute(
-            "insert into orders_challenges (order_id, authorization_id, challenge_type, token, reference, status, created_at, deleted_at) values ($1, $2, $3, $4, $5, $6, $7, $8) returning id",
-            &[&order_id, &self.authorization_id.clone(), &self.challenge_type.clone().to_string(), &self.token.clone(), &self.reference.clone(), &self.status.clone().to_string(), &self.created_at, &self.deleted_at],
+            "insert into orders_challenges (order_id, authorization_id, challenge_type, issuing_address, token, reference, status, created_at, deleted_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id",
+            &[&order_id, &self.authorization_id.clone(), &self.challenge_type.clone().to_string(), &self.issuing_address, &self.token.clone(), &self.reference.clone(), &self.status.clone().to_string(), &self.created_at, &self.deleted_at],
             ).await?;
         Ok(Self::collect(order_id, tx).await?)
     }

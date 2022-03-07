@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
     convert::{TryFrom, TryInto},
+    net::IpAddr,
 };
 use tokio_postgres::Transaction;
 use url::Url;
@@ -121,12 +122,14 @@ pub(crate) async fn new_order(
 
                 // for now at least, schedule one http-01 and dns-01 per name
 
+                let ip = req.extensions().get::<IpAddr>().unwrap();
                 for chall in vec![ChallengeType::DNS01, ChallengeType::HTTP01] {
                     let mut c = Challenge::new(
                         o.order_id.clone(),
                         authz.reference.clone(),
                         chall,
                         id.clone().to_string(),
+                        ip.to_string(),
                         OrderStatus::Pending,
                     );
 
