@@ -23,7 +23,7 @@ hyper = "^0.14"
 http = "^0.2"
 url = { version = "^2.2", features = [ "serde" ] }
 deadpool-postgres = { version = "^0.10", features = ["serde"] }
-ratpack = { version = "^0.1", path = "../ratpack" }
+ratpack = { version = "^0.1" }
 log = "^0.4"
 trust-dns-client = "^0.20"
 openssl = "^0.10"
