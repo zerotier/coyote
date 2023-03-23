@@ -137,7 +137,7 @@ pub(crate) async fn new_order(
                 }
             }
 
-            let url = uri_to_url(appstate.clone().baseurl, req.uri().clone()).await?;
+            let url = appstate.clone().baseurl;
 
             let order: Order =
                 crate::models::order::Order::find(o.id()?.unwrap(), appstate.db.clone())
@@ -186,7 +186,7 @@ pub(crate) async fn existing_order(
             )
             .await?;
 
-            let url = uri_to_url(appstate.clone().baseurl, req.uri().clone()).await?;
+            let url = appstate.clone().baseurl;
             let h_order = serde_json::to_string(&o.clone().into_handler_order(url.clone())?)?;
 
             return Ok((
@@ -523,12 +523,9 @@ pub(crate) async fn post_authz(
 
             let mut statuscode = StatusCode::CREATED;
 
-            let authz = Authorization::from_authorization_id(
-                auth_id,
-                uri_to_url(appstate.clone().baseurl, req.uri().clone()).await?,
-                &tx,
-            )
-            .await?;
+            let authz =
+                Authorization::from_authorization_id(auth_id, appstate.clone().baseurl, &tx)
+                    .await?;
             for chall in authz.clone().challenges {
                 if chall.status == OrderStatus::Valid {
                     statuscode = StatusCode::OK;
@@ -606,7 +603,10 @@ pub(crate) async fn post_challenge(
                 Some(
                     builder
                         .body(Body::from(serde_json::to_string(
-                            &ChallengeAuthorization::from_challenge(&ch, ch.into_url(url))?,
+                            &ChallengeAuthorization::from_challenge(
+                                &ch,
+                                ch.into_url(appstate.clone().baseurl),
+                            )?,
                         )?))
                         .unwrap(),
                 ),
