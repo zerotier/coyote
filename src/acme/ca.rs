@@ -90,7 +90,7 @@ impl CA {
             None,
             Some(&builder.x509v3_context(None, None)),
             "extendedKeyUsage",
-            "critical,serverAuth",
+            "critical,serverAuth,clientAuth",
         )?)?;
 
         builder.append_extension(X509Extension::new(
