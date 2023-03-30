@@ -333,7 +333,7 @@ pub(crate) async fn finalize_order(
                 Err(e) => return Err(ACMEValidationError::Other(e.to_string()).into()),
             };
 
-            let url = uri_to_url(appstate.clone().baseurl, req.uri().clone()).await?;
+            let url = appstate.clone().baseurl;
             let h_order = serde_json::to_string(&order.clone().into_handler_order(url.clone())?)?;
 
             return Ok((
