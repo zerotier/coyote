@@ -82,7 +82,7 @@ impl HandlerState {
             .header(REPLAY_NONCE_HEADER, self.clone().nonce.unwrap())
             .header(
                 "Link",
-                format!(r#"<{}>;rel="index""#, url.join("/")?.to_string()),
+                format!(r#"<{}>;rel="index""#, url.join("./")?.to_string()),
             ))
     }
 }

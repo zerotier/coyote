@@ -136,12 +136,12 @@ impl Order {
                 None
             },
             finalize: Some(
-                url.join(&format!("/order/{}/finalize", self.order_id))
+                url.join(&format!("./order/{}/finalize", self.order_id))
                     .unwrap(),
             ),
             // FIXME this needs to be at a unique location, not related to the order id
             certificate: Some(
-                url.join(&format!("/order/{}/certificate", self.order_id))
+                url.join(&format!("./order/{}/certificate", self.order_id))
                     .unwrap(),
             ),
         };
@@ -444,7 +444,7 @@ impl Challenge {
     }
 
     pub(crate) fn into_url(&self, url: url::Url) -> url::Url {
-        url.join(&format!("/chall/{}", self.reference)).unwrap()
+        url.join(&format!("./chall/{}", self.reference)).unwrap()
     }
 
     fn new_from_row(result: &Row) -> Result<Self, LoadError> {
@@ -731,7 +731,9 @@ impl Authorization {
     }
 
     pub fn into_url(&self, baseurl: Url) -> Url {
-        baseurl.join(&format!("/authz/{}", self.reference)).unwrap()
+        baseurl
+            .join(&format!("./authz/{}", self.reference))
+            .unwrap()
     }
 }
 
