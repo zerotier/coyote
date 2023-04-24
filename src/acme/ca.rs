@@ -12,7 +12,7 @@ use openssl::{
     hash::MessageDigest,
     pkey::{PKey, Private},
     rsa::Rsa,
-    x509::{X509Extension, X509Name, X509Req, X509},
+    x509::{extension, X509Extension, X509Name, X509Req, X509},
 };
 use tokio::sync::RwLock;
 
@@ -79,33 +79,30 @@ impl CA {
             }
         }
 
-        builder.append_extension(X509Extension::new(
-            None,
-            Some(&builder.x509v3_context(None, None)),
-            "keyUsage",
-            "critical,keyEncipherment,digitalSignature",
-        )?)?;
+        builder.append_extension(
+            extension::KeyUsage::new()
+                .critical()
+                .key_encipherment()
+                .digital_signature()
+                .build()?,
+        )?;
 
-        builder.append_extension(X509Extension::new(
-            None,
-            Some(&builder.x509v3_context(None, None)),
-            "extendedKeyUsage",
-            "critical,serverAuth,clientAuth",
-        )?)?;
+        builder.append_extension(
+            extension::ExtendedKeyUsage::new()
+                .server_auth()
+                .client_auth()
+                .build()?,
+        )?;
 
-        builder.append_extension(X509Extension::new(
-            None,
-            Some(&builder.x509v3_context(None, None)),
-            "authorityKeyIdentifier",
-            "issuer",
-        )?)?;
+        builder.append_extension(
+            extension::AuthorityKeyIdentifier::new()
+                .keyid(false)
+                .build(&builder.x509v3_context(Some(&self.certificate), None))?,
+        )?;
 
-        builder.append_extension(X509Extension::new(
-            None,
-            Some(&builder.x509v3_context(None, None)),
-            "subjectKeyIdentifier",
-            "hash",
-        )?)?;
+        builder.append_extension(
+            extension::SubjectKeyIdentifier::new().build(&builder.x509v3_context(Some(&self.certificate), None))?,
+        )?;
 
         builder.append_extension(X509Extension::new(
             None,
