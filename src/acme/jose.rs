@@ -53,7 +53,7 @@ impl ACMEProtectedHeader {
     pub fn new_jwk(jwk: JWK, url: Url, nonce: String) -> Self {
         Self {
             url,
-            alg: String::from(ACME_EXPECTED_ALGS[0].clone()),
+            alg: ACME_EXPECTED_ALGS[0].clone(),
             jwk: Some(jwk),
             kid: None,
             nonce,
@@ -66,7 +66,7 @@ impl ACMEProtectedHeader {
     pub fn new_kid(kid: Url, url: Url, nonce: String) -> Self {
         Self {
             url,
-            alg: String::from(ACME_EXPECTED_ALGS[0].clone()),
+            alg: ACME_EXPECTED_ALGS[0].clone(),
             jwk: None,
             kid: Some(kid),
             nonce,
@@ -131,7 +131,7 @@ impl ACMEProtectedHeader {
             ));
         }
 
-        Ok(validator.validate(&self.nonce).await?)
+        validator.validate(&self.nonce).await
     }
 }
 
@@ -157,9 +157,9 @@ impl TryFrom<&EcPointRef> for ACMEKey {
         let mut x = openssl::bn::BigNum::new()?;
         let mut y = openssl::bn::BigNum::new()?;
         ec.affine_coordinates_gfp(&EC_GROUP, &mut x, &mut y, &mut ctx)?;
-        Ok((&mut JWK {
-            x: Some(base64::encode_config(&x.to_vec(), base64::URL_SAFE_NO_PAD)),
-            y: Some(base64::encode_config(&y.to_vec(), base64::URL_SAFE_NO_PAD)),
+        (&mut JWK {
+            x: Some(base64::encode_config(x.to_vec(), base64::URL_SAFE_NO_PAD)),
+            y: Some(base64::encode_config(y.to_vec(), base64::URL_SAFE_NO_PAD)),
             alg: Some("ES256".into()),
             crv: Some("P-256".into()),
             _use: Some("sig".into()),
@@ -167,7 +167,7 @@ impl TryFrom<&EcPointRef> for ACMEKey {
             n: None,
             e: None,
         })
-            .try_into()?)
+            .try_into()
     }
 }
 
@@ -175,13 +175,13 @@ impl TryFrom<Rsa<Public>> for ACMEKey {
     type Error = JWSError;
 
     fn try_from(value: Rsa<Public>) -> Result<Self, Self::Error> {
-        Ok((&mut JWK {
+        (&mut JWK {
             e: Some(base64::encode_config(
-                &value.e().to_vec(),
+                value.e().to_vec(),
                 base64::URL_SAFE_NO_PAD,
             )),
             n: Some(base64::encode_config(
-                &value.n().to_vec(),
+                value.n().to_vec(),
                 base64::URL_SAFE_NO_PAD,
             )),
             alg: Some("RS256".into()),
@@ -191,7 +191,7 @@ impl TryFrom<Rsa<Public>> for ACMEKey {
             y: None,
             crv: None,
         })
-            .try_into()?)
+            .try_into()
     }
 }
 
@@ -227,7 +227,7 @@ impl TryFrom<JWS> for ACMEKey {
             return jwk.try_into();
         }
 
-        return Err(JWSError::InvalidPublicKey);
+        Err(JWSError::InvalidPublicKey)
     }
 }
 
@@ -302,7 +302,7 @@ impl JWK {
             return Ok(jwk);
         }
 
-        return Err(JWSError::InvalidPublicKey);
+        Err(JWSError::InvalidPublicKey)
     }
 
     // just a simple way to unroll private params without making them easy to dink with
@@ -428,19 +428,9 @@ impl JWS {
 
                 let mut v = Vec::with_capacity(r.len() + s.len());
                 let pad = &[0; 32];
-                v.extend_from_slice(
-                    &pad.iter()
-                        .take(32 - r.len())
-                        .map(|c| *c)
-                        .collect::<Vec<u8>>(),
-                );
+                v.extend_from_slice(&pad.iter().take(32 - r.len()).copied().collect::<Vec<u8>>());
                 v.extend_from_slice(&r);
-                v.extend_from_slice(
-                    &pad.iter()
-                        .take(32 - s.len())
-                        .map(|c| *c)
-                        .collect::<Vec<u8>>(),
-                );
+                v.extend_from_slice(&pad.iter().take(32 - s.len()).copied().collect::<Vec<u8>>());
                 v.extend_from_slice(&s);
 
                 self.signature = base64::encode_config(v, base64::URL_SAFE_NO_PAD);
@@ -473,8 +463,8 @@ impl JWS {
             n: jwk.n.clone(),
             e: jwk.e.clone(),
             x: jwk.x.clone(),
-            y: jwk.y.clone(),
-            alg: aph.alg.clone(),
+            y: jwk.y,
+            alg: aph.alg,
             id: None,
             created_at: chrono::DateTime::<chrono::Local>::from(SystemTime::now()),
             deleted_at: None,

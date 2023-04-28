@@ -9,7 +9,7 @@ pub struct DNSName(pub(crate) Name);
 
 impl DNSName {
     pub(crate) fn from_str(name: &str) -> Result<Self, trust_dns_client::error::ParseError> {
-        Ok(Self(Name::from_str(&name)?))
+        Ok(Self(Name::from_str(name)?))
     }
 
     pub(crate) fn to_string(&self) -> String {
@@ -43,7 +43,7 @@ impl Serialize for DNSName {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&self.0.to_string().trim_end_matches("."))
+        serializer.serialize_str(self.0.to_string().trim_end_matches('.'))
     }
 }
 
@@ -52,7 +52,7 @@ impl<'de> Deserialize<'de> for DNSName {
     where
         D: Deserializer<'de>,
     {
-        Ok(deserializer.deserialize_string(DNSNameVisitor)?)
+        deserializer.deserialize_string(DNSNameVisitor)
     }
 }
 

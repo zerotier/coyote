@@ -47,20 +47,18 @@ impl Into<Result<hyper::Response<Body>, serde_json::Error>> for ACMEResult {
     fn into(self) -> Result<hyper::Response<Body>, serde_json::Error> {
         match self {
             ACMEResult::Ok(res) => Ok(res),
-            ACMEResult::Err(e) => {
-                return Ok(hyper::Response::builder()
-                    .status(500)
-                    .header("content-type", "application/json")
-                    .body(Body::from(serde_json::to_string(&e)?))
-                    .unwrap())
-            }
+            ACMEResult::Err(e) => Ok(hyper::Response::builder()
+                .status(500)
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&e)?))
+                .unwrap()),
         }
     }
 }
 
 impl From<crate::errors::Error> for ACMEResult {
     fn from(e: crate::errors::Error) -> Self {
-        return ACMEResult::Err(e);
+        ACMEResult::Err(e)
     }
 }
 

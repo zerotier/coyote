@@ -66,7 +66,7 @@ pub struct PGTest {
     _temp: Arc<Mutex<TempDir>>,
 }
 
-fn pull_images(images: Vec<&str>) -> () {
+fn pull_images(images: Vec<&str>) {
     // bollard doesn't let you pull images. sadly, this is what I came up with until I can patch
     // it.
 
@@ -83,7 +83,7 @@ fn pull_images(images: Vec<&str>) -> () {
     }
 }
 
-async fn wait_for_images(images: Vec<&str>) -> () {
+async fn wait_for_images(images: Vec<&str>) {
     let docker = Docker::connect_with_local_defaults().unwrap();
 
     for image in images {
@@ -139,7 +139,7 @@ impl PGTest {
                     binds: Some(vec![
                         format!(
                             "{}:{}",
-                            hbapath.to_string_lossy().to_string(),
+                            hbapath.to_string_lossy(),
                             "/etc/postgresql/pg_hba.conf"
                         ),
                         format!("{}:{}", temp.path().display(), "/var/run/postgresql"),
@@ -235,10 +235,10 @@ impl TestService {
     pub(crate) async fn new(name: &str) -> Self {
         let pg = PGTest::new(name).await.unwrap();
         let c = Challenger::new(Some(chrono::Duration::seconds(60)));
-        let validator = PostgresNonceValidator::new(pg.db().clone());
+        let validator = PostgresNonceValidator::new(pg.db());
 
         let c2 = c.clone();
-        let pg2 = pg.db().clone();
+        let pg2 = pg.db();
 
         tokio::spawn(async move {
             loop {
@@ -353,7 +353,7 @@ impl TestService {
             return Err(ContainerError::ZLint(s));
         }
 
-        return Ok(());
+        Ok(())
     }
 
     pub(crate) async fn certbot(
@@ -413,7 +413,7 @@ impl TestService {
         }
 
         self.wait(name, false).await?;
-        return Ok(certs);
+        Ok(certs)
     }
 
     async fn launch(

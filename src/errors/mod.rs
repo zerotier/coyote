@@ -95,7 +95,7 @@ impl ratpack::ToStatus for ACMEValidationError {
 
 impl From<ACMEValidationError> for Error {
     fn from(ave: ACMEValidationError) -> Self {
-        match ave.clone() {
+        match ave {
             ACMEValidationError::NoKeyProvided
             | ACMEValidationError::NonceDecodeError
             | ACMEValidationError::InvalidRequest => {
@@ -330,9 +330,7 @@ impl Error {
 
         if sp.is_some() {
             for prob in sp.unwrap() {
-                if let Err(r) = prob.validate() {
-                    return Err(r);
-                }
+                prob.validate()?
             }
         }
 

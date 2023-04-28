@@ -91,21 +91,21 @@ impl Order {
         let mut dt_notafter: Option<chrono::DateTime<chrono::Local>> = None;
 
         if let Some(expires) = self.expires {
-            dt_expires = Some(expires.into())
+            dt_expires = Some(expires)
         }
 
         if let Some(notbefore) = self.not_before {
-            dt_notbefore = Some(notbefore.into())
+            dt_notbefore = Some(notbefore)
         }
 
         if let Some(notafter) = self.not_after {
-            dt_notafter = Some(notafter.into())
+            dt_notafter = Some(notafter)
         }
 
         let o = crate::acme::handlers::order::Order {
             status: Some(self.status.clone()),
             expires: dt_expires,
-            identifiers: if auths.clone().is_some() {
+            identifiers: if auths.is_some() {
                 auths
                     .clone()
                     .unwrap()
@@ -123,10 +123,9 @@ impl Order {
             not_after: dt_notafter,
             not_before: dt_notbefore,
             error: self.error,
-            authorizations: if auths.clone().is_some() {
+            authorizations: if auths.is_some() {
                 Some(
                     auths
-                        .clone()
                         .unwrap()
                         .iter()
                         .map(|x: &Authorization| x.into_url(url.clone()))
@@ -249,7 +248,7 @@ impl Record<i32> for Order {
             finalized: order_row.get("finalized"),
             deleted_at: order_row.get("deleted_at"),
             created_at: order_row.get("created_at"),
-            status: status.into(),
+            status,
             authorizations: Some(authorizations),
         })
     }
@@ -455,7 +454,7 @@ impl Challenge {
             id: result.get("id"),
             order_id: result.get("order_id"),
             authorization_id: result.get("authorization_id"),
-            challenge_type: ct.clone(),
+            challenge_type: ct,
             identifier: id.to_string(),
             issuing_address: result.get("issuing_address"),
             validated: result.get("validated"),
@@ -573,9 +572,9 @@ impl Default for Certificate {
     }
 }
 
-impl Into<String> for Certificate {
-    fn into(self) -> String {
-        self.reference
+impl From<Certificate> for String {
+    fn from(val: Certificate) -> Self {
+        val.reference
     }
 }
 
@@ -720,7 +719,7 @@ impl Authorization {
             )
             .await?;
 
-        Ok(Self::new_from_row(&res, tx).await?)
+        Self::new_from_row(&res, tx).await
     }
 
     pub(crate) async fn challenges(
@@ -762,7 +761,7 @@ impl RecordList<String> for Authorization {
             )
             .await?;
 
-        Ok(Self::new_from_row(&row, &tx).await?)
+        Ok(Self::new_from_row(&row, tx).await?)
     }
 
     async fn append(&self, order_id: String, tx: &Transaction<'_>) -> Result<Vec<Self>, SaveError> {

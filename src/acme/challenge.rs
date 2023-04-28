@@ -34,9 +34,9 @@ impl TryFrom<&str> for ChallengeType {
     }
 }
 
-impl Into<String> for ChallengeType {
-    fn into(self) -> String {
-        match self {
+impl From<ChallengeType> for String {
+    fn from(val: ChallengeType) -> Self {
+        match val {
             ChallengeType::DNS01 => "dns-01",
             ChallengeType::HTTP01 => "http-01",
         }
@@ -142,7 +142,7 @@ impl Challenger {
             match c.status {
                 OrderStatus::Pending | OrderStatus::Processing => {}
                 _ => {
-                    let mut c: crate::models::order::Challenge = c.clone().into();
+                    let mut c: crate::models::order::Challenge = c.clone();
                     c.persist_status(&tx).await?;
                     sv.push(s.clone());
                 }

@@ -1,4 +1,4 @@
-use super::{LoadError, Record, Postgres, SaveError};
+use super::{LoadError, Postgres, Record, SaveError};
 use crate::util::make_nonce;
 use async_trait::async_trait;
 use tokio_postgres::{Row, Transaction};
@@ -31,7 +31,7 @@ impl Nonce {
 #[async_trait]
 impl Record<String> for Nonce {
     async fn new_from_row(row: &Row, _tx: &Transaction<'_>) -> Result<Self, LoadError> {
-        if row.len() > 0 {
+        if !row.is_empty() {
             Ok(Self {
                 nonce: row.get("nonce"),
             })
@@ -41,7 +41,7 @@ impl Record<String> for Nonce {
     }
 
     fn id(&self) -> Result<Option<String>, LoadError> {
-        return Ok(Some(self.nonce.clone()));
+        Ok(Some(self.nonce.clone()))
     }
 
     async fn find(id: String, db: Postgres) -> Result<Self, LoadError> {

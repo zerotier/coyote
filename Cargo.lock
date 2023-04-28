@@ -1235,7 +1235,9 @@ dependencies = [
 
 [[package]]
 name = "ratpack"
-version = "0.1.3"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95e31ecc7a02e6bebabaebb9dba5ee5bc63d2ac9333a8d502b1f116f8e221d9f"
 dependencies = [
  "async-recursion",
  "http",
