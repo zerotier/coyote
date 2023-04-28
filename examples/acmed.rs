@@ -69,5 +69,5 @@ async fn main() -> Result<(), ServerError> {
 
     configure_routes(&mut app, None);
 
-    Ok(app.serve("127.0.0.1:8000").await?)
+    app.serve("127.0.0.1:8000").await
 }

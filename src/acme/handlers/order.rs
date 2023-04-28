@@ -101,17 +101,14 @@ pub(crate) async fn new_order(
     app: App<ServiceState, HandlerState>,
     state: HandlerState,
 ) -> HTTPResult<HandlerState> {
-    let appstate_opt = app.state().await.clone().unwrap();
+    let appstate_opt = app.state().await.unwrap();
     let appstate = appstate_opt.lock().await;
 
     match state.clone().jws {
         Some(jws) => {
             let order: Order = jws.payload()?;
 
-            let mut o = crate::models::order::Order::new(
-                order.not_before.map_or(None, |f| Some(f.into())),
-                order.not_after.map_or(None, |f| Some(f.into())),
-            );
+            let mut o = crate::models::order::Order::new(order.not_before, order.not_after);
             o.create(appstate.db.clone()).await?;
 
             for id in order.identifiers {
@@ -163,7 +160,7 @@ pub(crate) async fn new_order(
         None => {}
     }
 
-    return Err(ACMEValidationError::InvalidRequest.into());
+    Err(ACMEValidationError::InvalidRequest.into())
 }
 
 pub(crate) async fn existing_order(
@@ -173,7 +170,7 @@ pub(crate) async fn existing_order(
     app: App<ServiceState, HandlerState>,
     state: HandlerState,
 ) -> HTTPResult<HandlerState> {
-    let appstate_opt = app.state().await.clone().unwrap();
+    let appstate_opt = app.state().await.unwrap();
     let appstate = appstate_opt.lock().await;
 
     match state.clone().jws {
@@ -208,7 +205,7 @@ pub(crate) async fn existing_order(
         None => {}
     }
 
-    return Err(ACMEValidationError::InvalidRequest.into());
+    Err(ACMEValidationError::InvalidRequest.into())
 }
 
 /// RFC8555 7.4.
@@ -225,7 +222,7 @@ pub(crate) async fn finalize_order(
     app: App<ServiceState, HandlerState>,
     state: HandlerState,
 ) -> HTTPResult<HandlerState> {
-    let appstate_opt = app.state().await.clone().unwrap();
+    let appstate_opt = app.state().await.unwrap();
     let appstate = appstate_opt.lock().await;
 
     match state.clone().jws {
@@ -356,7 +353,7 @@ pub(crate) async fn finalize_order(
         None => {}
     }
 
-    return Err(ACMEValidationError::InvalidRequest.into());
+    Err(ACMEValidationError::InvalidRequest.into())
 }
 
 pub(crate) async fn get_certificate(
@@ -366,7 +363,7 @@ pub(crate) async fn get_certificate(
     app: App<ServiceState, HandlerState>,
     state: HandlerState,
 ) -> HTTPResult<HandlerState> {
-    let appstate_opt = app.state().await.clone().unwrap();
+    let appstate_opt = app.state().await.unwrap();
     let appstate = appstate_opt.lock().await;
 
     match state.clone().jws {
@@ -410,7 +407,7 @@ pub(crate) async fn get_certificate(
         None => {}
     }
 
-    return Err(ACMEValidationError::InvalidRequest.into());
+    Err(ACMEValidationError::InvalidRequest.into())
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -452,7 +449,7 @@ impl ChallengeAuthorization {
             url,
             token: c.token.clone(),
             status: c.status.clone(),
-            validated: c.validated.map(|t| t.into()),
+            validated: c.validated,
         })
     }
 }
@@ -463,8 +460,8 @@ impl Authorization {
         url: Url,
         tx: &Transaction<'_>,
     ) -> Result<Self, LoadError> {
-        let auth = crate::models::order::Authorization::find_by_reference(auth_id, &tx).await?;
-        let challenges = auth.challenges(&tx).await?;
+        let auth = crate::models::order::Authorization::find_by_reference(auth_id, tx).await?;
+        let challenges = auth.challenges(tx).await?;
 
         let chs = challenges
             .iter()
@@ -481,20 +478,18 @@ impl Authorization {
             .collect::<Vec<ChallengeAuthorization>>();
 
         Ok(Self {
-            expires: auth.expires.into(),
+            expires: auth.expires,
             status: if auth.deleted_at.is_some() {
                 AuthStatus::Deactivated
+            } else if chs.iter().any(|ca| ca.status == OrderStatus::Valid) {
+                AuthStatus::Valid
+            } else if chs
+                .iter()
+                .all(|ca| ca.status != OrderStatus::Valid && ca.status != OrderStatus::Invalid)
+            {
+                AuthStatus::Pending
             } else {
-                if chs.iter().any(|ca| ca.status == OrderStatus::Valid) {
-                    AuthStatus::Valid
-                } else if chs
-                    .iter()
-                    .all(|ca| ca.status != OrderStatus::Valid && ca.status != OrderStatus::Invalid)
-                {
-                    AuthStatus::Pending
-                } else {
-                    AuthStatus::Revoked
-                }
+                AuthStatus::Revoked
             },
             identifier: auth.identifier.unwrap().try_into()?,
             challenges: chs,
@@ -510,7 +505,7 @@ pub(crate) async fn post_authz(
     app: App<ServiceState, HandlerState>,
     state: HandlerState,
 ) -> HTTPResult<HandlerState> {
-    let appstate_opt = app.state().await.clone().unwrap();
+    let appstate_opt = app.state().await.unwrap();
     let appstate = appstate_opt.lock().await;
 
     match state.clone().jws {
@@ -541,7 +536,7 @@ pub(crate) async fn post_authz(
                 .decorate_response(url.clone(), Response::builder())?
                 .header(
                     "Link",
-                    HeaderValue::from_str(&format!(r#"<{}>;rel="up""#, url.clone()))?,
+                    HeaderValue::from_str(&format!(r#"<{}>;rel="up""#, url))?,
                 );
 
             let out = serde_json::to_string(&authz)?;
@@ -554,7 +549,7 @@ pub(crate) async fn post_authz(
         None => {}
     }
 
-    return Err(ACMEValidationError::InvalidRequest.into());
+    Err(ACMEValidationError::InvalidRequest.into())
 }
 
 pub(crate) async fn post_challenge(
@@ -564,7 +559,7 @@ pub(crate) async fn post_challenge(
     app: App<ServiceState, HandlerState>,
     state: HandlerState,
 ) -> HTTPResult<HandlerState> {
-    let appstate_opt = app.state().await.clone().unwrap();
+    let appstate_opt = app.state().await.unwrap();
     let appstate = appstate_opt.lock().await;
 
     match state.clone().jws {
@@ -616,7 +611,7 @@ pub(crate) async fn post_challenge(
         None => {}
     }
 
-    return Err(ACMEValidationError::InvalidRequest.into());
+    Err(ACMEValidationError::InvalidRequest.into())
 }
 
 mod tests {
@@ -652,7 +647,7 @@ mod tests {
             let mut root = dir.path().to_path_buf();
             root.push("live/foo.com");
 
-            for filename in vec!["fullchain", "cert", "chain", "privkey"] {
+            for filename in &["fullchain", "cert", "chain", "privkey"] {
                 let mut path = root.clone();
                 path.push(filename.to_string() + ".pem");
                 let res = path.metadata();
@@ -674,7 +669,7 @@ mod tests {
 
         let dir = Arc::new(TempDir::new().unwrap());
 
-        for domain in vec!["foo.com", "bar.com", "example.org", "example.com"] {
+        for domain in &["foo.com", "bar.com", "example.org", "example.com"] {
             let res = srv.clone().certbot(
                 Some(dir.clone()),
                 format!(
@@ -697,7 +692,7 @@ mod tests {
             let mut root = dir.path().to_path_buf();
             root.push(format!("live/{}", domain));
 
-            for filename in vec!["fullchain", "cert", "chain", "privkey"] {
+            for filename in &["fullchain", "cert", "chain", "privkey"] {
                 let mut path = root.clone();
                 path.push(filename.to_string() + ".pem");
                 let res = path.metadata();

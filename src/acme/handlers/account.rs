@@ -80,9 +80,9 @@ impl TryFrom<Url> for AccountUrl {
     }
 }
 
-impl Into<String> for AccountUrl {
-    fn into(self) -> String {
-        self.0.to_string()
+impl From<AccountUrl> for String {
+    fn from(val: AccountUrl) -> Self {
+        val.0.to_string()
     }
 }
 
@@ -91,6 +91,7 @@ pub struct ExternalBinding {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub struct NewAccount {
     pub contact: Option<Vec<AccountUrl>>,
     pub terms_of_service_agreed: Option<bool>,
@@ -114,17 +115,6 @@ impl NewAccount {
     }
 }
 
-impl Default for NewAccount {
-    fn default() -> Self {
-        Self {
-            contact: None,
-            terms_of_service_agreed: None,
-            only_return_existing: None,
-            external_account_binding: None,
-        }
-    }
-}
-
 pub(crate) async fn new_account(
     req: Request<Body>,
     _resp: Option<Response<Body>>,
@@ -132,7 +122,7 @@ pub(crate) async fn new_account(
     app: App<ServiceState, HandlerState>,
     state: HandlerState,
 ) -> HTTPResult<HandlerState> {
-    let appstate_opt = app.state().await.clone().unwrap();
+    let appstate_opt = app.state().await.unwrap();
     let appstate = appstate_opt.lock().await;
 
     match state.clone().jws {
@@ -156,12 +146,12 @@ pub(crate) async fn new_account(
                     .header(
                         "Location",
                         url.clone()
-                            .join(&format!("./account/{}", &rec.clone().nonce_key()))?
+                            .join(&format!("./account/{}", &rec.nonce_key()))?
                             .to_string(),
                     )
                     .body(Body::from(serde_json::to_string(&rec)?))
                     .unwrap();
-                return Ok((req, Some(resp), state));
+                Ok((req, Some(resp), state))
             } else {
                 let mut jwk = jws.into_db_jwk()?;
 
@@ -180,15 +170,13 @@ pub(crate) async fn new_account(
                     )
                     .body(Body::from(serde_json::to_string(&newacct.to_account())?))
                     .unwrap();
-                return Ok((req, Some(resp), state));
+                Ok((req, Some(resp), state))
             }
         }
-        None => {
-            return Err(ratpack::Error::StatusCode(
-                StatusCode::NOT_FOUND,
-                String::default(),
-            ))
-        }
+        None => Err(ratpack::Error::StatusCode(
+            StatusCode::NOT_FOUND,
+            String::default(),
+        )),
     }
 }
 
@@ -199,7 +187,7 @@ pub(crate) async fn post_account(
     app: App<ServiceState, HandlerState>,
     state: HandlerState,
 ) -> HTTPResult<HandlerState> {
-    let appstate_opt = app.state().await.clone().unwrap();
+    let appstate_opt = app.state().await.unwrap();
     let appstate = appstate_opt.lock().await;
 
     // FIXME this still needs code to update contact lists; see 7.3.2.
@@ -239,7 +227,7 @@ pub(crate) async fn post_account(
                         req,
                         Some(
                             state
-                                .decorate_response(url.clone(), Response::builder())?
+                                .decorate_response(url, Response::builder())?
                                 .status(StatusCode::OK)
                                 .body(Body::from(serde_json::to_string(&target)?))
                                 .unwrap(),
@@ -258,7 +246,7 @@ pub(crate) async fn post_account(
         }
     }
 
-    return Err(ACMEValidationError::InvalidRequest.to_status());
+    Err(ACMEValidationError::InvalidRequest.to_status())
 }
 
 mod tests {

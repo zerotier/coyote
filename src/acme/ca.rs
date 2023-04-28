@@ -220,7 +220,7 @@ impl CACollector {
 
     /// returns the CA as a SharedCA.
     pub fn ca(self) -> SharedCA {
-        self.ca.clone()
+        self.ca
     }
 
     /// majority of callers will use this function to collect the CA. It takes a closure which
@@ -248,13 +248,12 @@ impl CACollector {
         not_before: SystemTime,
         not_after: SystemTime,
     ) -> Result<X509, ErrorStack> {
-        Ok(self
-            .ca()
+        self.ca()
             .read()
             .await
             .clone()
             .unwrap()
-            .generate_and_sign_cert(req, not_before, not_after)?)
+            .generate_and_sign_cert(req, not_before, not_after)
     }
 }
 

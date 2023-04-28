@@ -55,13 +55,13 @@ impl From<ConnectionError> for SaveError {
 
 impl From<LoadError> for SaveError {
     fn from(e: LoadError) -> Self {
-        return Self::JSONCodecError(e.to_string());
+        Self::JSONCodecError(e.to_string())
     }
 }
 
 impl From<serde_json::Error> for SaveError {
     fn from(e: serde_json::Error) -> Self {
-        return Self::JSONCodecError(e.to_string());
+        Self::JSONCodecError(e.to_string())
     }
 }
 
@@ -96,7 +96,7 @@ impl From<ConnectionError> for LoadError {
 
 impl From<serde_json::Error> for LoadError {
     fn from(e: serde_json::Error) -> Self {
-        return Self::JSONCodecError(e.to_string());
+        Self::JSONCodecError(e.to_string())
     }
 }
 

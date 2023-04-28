@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// See 7.1.1 of RFC8555
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub struct DirectoryMeta {
     #[serde(skip_serializing_if = "Option::is_none")]
     terms_of_service: Option<String>,
@@ -14,17 +15,6 @@ pub struct DirectoryMeta {
     caa_identities: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     external_account_required: Option<bool>,
-}
-
-impl Default for DirectoryMeta {
-    fn default() -> Self {
-        Self {
-            terms_of_service: None,
-            website: None,
-            caa_identities: None,
-            external_account_required: None,
-        }
-    }
 }
 
 /// See 7.1.1 of RFC8555

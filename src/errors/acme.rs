@@ -33,7 +33,7 @@ impl From<ErrorStack> for JWSValidationError {
     fn from(es: ErrorStack) -> Self {
         let errors = es
             .errors()
-            .into_iter()
+            .iter()
             .map(|x| x.to_string())
             .collect::<Vec<String>>();
         Self::OpenSSL(errors.join("\n"))
@@ -63,7 +63,7 @@ impl From<ErrorStack> for JWSError {
     fn from(es: ErrorStack) -> Self {
         let errors = es
             .errors()
-            .into_iter()
+            .iter()
             .map(|x| x.to_string())
             .collect::<Vec<String>>();
         Self::OpenSSL(errors.join("\n"))

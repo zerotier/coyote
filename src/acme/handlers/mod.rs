@@ -80,10 +80,7 @@ impl HandlerState {
         Ok(builder
             .header("content-type", ACME_CONTENT_TYPE)
             .header(REPLAY_NONCE_HEADER, self.clone().nonce.unwrap())
-            .header(
-                "Link",
-                format!(r#"<{}>;rel="index""#, url.join("/")?.to_string()),
-            ))
+            .header("Link", format!(r#"<{}>;rel="index""#, url.join("/")?)))
     }
 }
 
@@ -127,7 +124,7 @@ async fn handle_jws(
     // what a mess.
     if let Ok(jws) = jws {
         let uri = req.uri().clone();
-        let appstate_opt = app.state().await.clone().unwrap();
+        let appstate_opt = app.state().await.unwrap();
         let appstate = appstate_opt.lock().await;
 
         match jws.clone().protected() {
@@ -236,7 +233,7 @@ pub fn configure_routes(app: &mut App<ServiceState, HandlerState>, rootpath: Opt
         jws_handler!(post_authz),
     );
     app.post(
-        &(rootpath.clone() + "chall/:challenge_id"),
+        &(rootpath + "chall/:challenge_id"),
         jws_handler!(post_challenge),
     );
 }

@@ -275,11 +275,11 @@ impl JWK {
     }
 
     pub async fn find_by_kid(url: Url, db: Postgres) -> Result<Self, LoadError> {
-        if let None = url.path_segments() {
+        if url.path_segments().is_none() {
             return Err(LoadError::NotFound);
         }
 
-        if let None = url.path_segments().unwrap().last() {
+        if url.path_segments().unwrap().last().is_none() {
             return Err(LoadError::NotFound);
         }
 
