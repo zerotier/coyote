@@ -1,3 +1,4 @@
+use futures_core::Future;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, convert::TryFrom, ops::Add, sync::Arc};
 use tokio::sync::Mutex;
@@ -75,9 +76,10 @@ impl Challenger {
     /// tick should be called in a loop in its own async routine with an interval between
     /// iterations. This performs each challenge in the queue and invalidates any expired
     /// challenges. To commit to storage, call reconcile.
-    pub async fn tick<T>(&self, ticker: T)
+    pub async fn tick<T, F>(&self, ticker: T)
     where
-        T: Fn(Challenge) -> Option<()>,
+        T: Fn(Challenge) -> F,
+        F: Future<Output = Option<()>>,
     {
         let mut lock = self.list.lock().await;
         let mut ch = HashMap::new();
@@ -85,11 +87,8 @@ impl Challenger {
         let mut iv = Vec::new();
 
         for (s, c) in lock.iter_mut() {
-            match c.status {
-                OrderStatus::Processing => {
-                    ch.insert(s.clone(), c.clone());
-                }
-                _ => {}
+            if let OrderStatus::Processing = c.status {
+                ch.insert(s.clone(), c.clone());
             }
         }
 
@@ -104,7 +103,7 @@ impl Challenger {
                 continue;
             }
 
-            match ticker(c.clone()) {
+            match ticker(c.clone()).await {
                 Some(_) => {
                     sv.push(s.clone());
                 }
@@ -204,7 +203,7 @@ mod tests {
         challenge.create(pg.db()).await.unwrap();
 
         c.schedule(challenge.clone()).await;
-        c.tick(|_c| Some(())).await;
+        c.tick(|_c| async { Some(()) }).await;
         c.reconcile(pg.db()).await.unwrap();
 
         let challenges = order
@@ -238,7 +237,7 @@ mod tests {
         tokio::time::sleep(Duration::new(2, 0)).await;
 
         c.schedule(challenge.clone()).await;
-        c.tick(|_c| None).await;
+        c.tick(|_c| async { None }).await;
         c.reconcile(pg.db()).await.unwrap();
 
         let challenges = order
@@ -274,7 +273,7 @@ mod tests {
         let db2 = db.clone();
         let supervisor = tokio::spawn(async move {
             loop {
-                c2.tick(|_c| Some(())).await;
+                c2.tick(|_c| async { Some(()) }).await;
                 c2.reconcile(db2.clone()).await.unwrap();
                 tokio::time::sleep(Duration::new(1, 0)).await;
             }

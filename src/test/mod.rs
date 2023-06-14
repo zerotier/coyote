@@ -242,7 +242,7 @@ impl TestService {
 
         tokio::spawn(async move {
             loop {
-                c2.tick(|_c| Some(())).await;
+                c2.tick(|_c| async { Some(()) }).await;
                 c2.reconcile(pg2.clone()).await.unwrap();
 
                 tokio::time::sleep(Duration::new(0, 250)).await;

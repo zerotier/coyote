@@ -41,7 +41,7 @@ async fn main() -> Result<(), ServerError> {
     tokio::spawn(async move {
         loop {
             // FIXME whitelist all challenge requests. This is not how ACME is supposed to work. You have to write this.
-            c2.tick(|_c| Some(())).await;
+            c2.tick(|_c| async { Some(()) }).await;
             // NOTE this will explode violently if it unwraps to error, e.g. if the db goes down.
             c2.reconcile(pg2.clone()).await.unwrap();
 
